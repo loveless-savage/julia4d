@@ -1,0 +1,42 @@
+#!/bin/bash
+
+echo compiling julia4d
+echo
+
+# compile
+g++ src/* -I inc/ -o julia4d
+
+# check for success or failure of compilation
+if [ $? -eq 0 ]; then
+	echo compile successful!
+	echo
+else
+	echo aw dang.
+	echo script finished.
+	exit
+fi
+
+<<comment
+# check to see if parameters were given
+if [ -z "$1" ]; then
+	# if not, you're done. exit the script
+	echo script finished.
+	exit
+else
+	# if we gave parameters, keep going
+	echo executing ./julia4d
+	echo
+fi
+# execute
+./julia4d "$@"
+comment
+./julia4d
+
+# show the resultant image
+fbi julia4d.png
+
+echo
+echo script finished.
+
+# print dividing line across terminal
+printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
