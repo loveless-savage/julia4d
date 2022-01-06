@@ -143,7 +143,7 @@ void Camera::takePhoto(char *filename){
 	for(int py=0;py<pxH;py++){ for(int px=0;px<pxW;px++){
  // TODO: collect test results indirectly
  		cout << "_";
-		depth = marcher->test(
+		depth = marcher->castRay(
 				5.0 * ((float)px)/((float)pxW) - 2.5,
 				5.0 * ((float)py)/((float)pxH) - 2.5
 			);

@@ -25,16 +25,39 @@ void RayMarcher::orient(vec4 *rootZ, vec4 *rootX, vec4 *rootY, float distFromOri
 };
 
 // test given pixel coordinates
-float RayMarcher::test(float pX, float pY){
-	// accumulate the total distance from camera to intersection w/ the fractal
-	float distSum=0;
+void RayMarcher::test(float pX, float pY){}
 
-	// displace the starting ray a little to the side, as perscribed by the displacing vectors stepX & stepY
-	step = step0 + (stepX*pX) + (stepY*pY);
-	step = step.normalize();
+// cast ray associated with given screen coordinates
+float RayMarcher::castRay(float pX, float pY){
+   // accumulate the total distance from camera to intersection w/ the fractal
+   float distSum=0;
 
-	/*for testing*/ step.set(pX,pY,-0.8, 0.18);
+   // displace the starting ray a little to the side, as perscribed by the displacing vectors stepX & stepY
+   step = step0 + (stepX*pX) + (stepY*pY);
+   step = step.normalize();
 
+   /*for testing*/ step.set(pX,pY,-0.8, 0.18);
+
+   /* eventually there will be a loop here in order to march the ray */
+   this->jtest();
+
+   // if it still passes the divergence test, color it black
+   if(n == iterMax) return -1.0;
+
+   switch (rtype) {
+      case RayMarcher::renderType::distance :
+         return -1.0; // TODO
+      case RayMarcher::renderType::dz :
+         return sqrt(dz_step[Z0A]*dz_step[Z0A]+dz_step[Z0B]*dz_step[Z0B]);
+      case RayMarcher::renderType::dc :
+         return sqrt(dz_step[C0A]*dz_step[C0A]+dz_step[C0B]*dz_step[C0B]);
+      default:
+         return 0.1*n;
+   }
+}
+
+// while casting a ray, use current ray coordinates & run a julia test
+void RayMarcher::jtest(){
 	// computation variables- real & imaginary parts
 	za = step[Z0A]; // the macro Z0A accesses step[0]
 	zb = step[Z0B]; // ... & vice versa
@@ -86,18 +109,6 @@ float RayMarcher::test(float pX, float pY){
 
 		n++;
 	}
-	
-	// if it still passes the divergence test, color it black
-	if(n == iterMax) return -1.0;
 
-	switch (rtype) {
-	case RayMarcher::renderType::distance :
-		 return -1.0;// TODO
-	case RayMarcher::renderType::dz :
-		return dz_step[Z0B];//sqrt(dza[0]*dza[0]+dzb[0]*dzb[0]);
-	case RayMarcher::renderType::dc :
-		return dz_step[C0A];//sqrt(dz_ac*dz_ac+dz_bc*dz_bc);
-	default:
-		return 0.1*n;
-	}
+   return;
 };

@@ -2,7 +2,6 @@
 #include  "camera.h"
 #include <fstream>
 
-mat4 m, mult;
 Camera *cam;
 const float ang = M_PI_4;
 

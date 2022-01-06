@@ -21,11 +21,16 @@ public:
 	void orient(vec4 *rootZ, vec4 *rootX, vec4 *rootY, float distFromOrigin, float pxStepLength);
 
 	// test given pixel coordinates
-	float test(float pX, float pY);
+	void test(float pX, float pY);
+
+   // cast ray associated with given screen coordinates
+   float castRay(float pX, float pY);
+
+   // while casting a ray, use current ray coordinates & run a julia test
+   void jtest();
 
 	// potential rendering scalars are public, as to be read from asynchronously
 	float n=0;
-	float z0a,z0b,ca,cb;
 	float za,zb;
 	vec4 step; // current location of ray; coordinates are [ z0a, z0b, ca, cb ]
 	vec4 dz_step; // derivative of Z_n with respect to above variables ^
