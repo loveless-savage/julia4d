@@ -9,7 +9,7 @@ using namespace std;
 
 
 //constructor
-Imager::Imager (char* filename, int px, int py, float& d)
+Imager::Imager (std::string filename, int px, int py, float& d)
 	: filename(filename),pxW(px),pxH(py),depth(&d)
 {
 	// allocate space for rendering data - pxW*pxH pixels, 3 colors per pixel (RGB)
@@ -48,7 +48,7 @@ void Imager::renderPixel(){
 // print image to a file once rendering is finished
 void Imager::print(){
 	// print data to png file w/ given width/height, 3 colors, & data location
-	stbi_write_png(filename, pxW,pxH, 3, photo, pxW*3);
+	stbi_write_png(filename.c_str(), pxW,pxH, 3, photo, pxW*3);
 };
 
 
@@ -57,27 +57,28 @@ void Imager::print(){
 // constructor
 Camera::Camera(){
 	pos = new mat4();
-	// xyzw are just pointers to the 4 columns of the position vector (w/ added vec4 functionality)
-	x = new vec4((*pos)[0]);
-	y = new vec4((*pos)[4]);
-	z = new vec4((*pos)[8]);
-	w = new vec4((*pos)[12]);
-
 	rtemp = new mat4();
 
 	marcher = new RayMarcher();
 
-	// these are some pretty good default values for image size
+ // these are some pretty good default values for camera positioning
+   // this corresponds to the size of the actual julia set, 2.0 units with a little wiggle room
+   fovSphereRadius = 2.5;
+   // when the camera is twice the distance from the origin as the object's size,
+   // it leads to a comfortable 30degree viewing angle
+   distFromOrigin = 5.0;
+
+   // default values for image size
 	pxW = 500;
 	pxH = 500;
 }
 
 // destructor
-Camera::~Camera(){ delete pos, rtemp, x, y, z, w, marcher; }
+Camera::~Camera(){ delete pos, rtemp, marcher; }
 
 // rotate associated gimbal
 void Camera::rotate(int axisA, int axisB, float ang){
-	cout << "rotating around axes " << axisA << "," << axisB << " by " << ang << endl;
+	//cout << "rotating around axes " << axisA << "," << axisB << " by " << ang << endl;
 	rtemp->buildRotor(axisA,axisB,ang);
 	pos->mult(*rtemp);
 	//pos->dump();
@@ -91,7 +92,7 @@ void Camera::renderOptions(int w, int h, int iterMax, RayMarcher::renderType rty
 };
 
 // render a photo at the current position
-void Camera::takePhoto(char *filename){
+void Camera::takePhoto(std::string filename){
 /* distFromOrigin is fairly self-explanatory: distance from the camera to the origin
  * let D = distFromOrigin
  * fovSphereRadius describes the radius of the largest sphere to fall entirely within the camera's FOV
@@ -121,10 +122,14 @@ void Camera::takePhoto(char *filename){
 
 	// set up ray marcher w/ seed vectors
 	marcher->orient(
-		z,x,y, // 3 basis vectors
+		pos->z,pos->x/fminf(pxW,pxH),pos->y/fminf(pxW,pxH), // 3 basis vectors
 		distFromOrigin, // distance of the camera from the origin
-		2*fovSphereRadius/sqrtf(distFromOrigin*distFromOrigin-fovSphereRadius*fovSphereRadius)/fminf(pxW,pxH) // step length to skew the base rendering vector between pixels
+
+	 // now we calculate step length to skew the base rendering vector between pixels:
+      2*fovSphereRadius // actual width of the object
+            / sqrt(distFromOrigin*distFromOrigin-fovSphereRadius*fovSphereRadius) // project world size to screen size
 	);
+
 
 	// capture value of scalar returned by test
 	float depth;
@@ -141,16 +146,13 @@ void Camera::takePhoto(char *filename){
 
 	// loop once per pixel- px & py give the current pixel coordinates
 	for(int py=0;py<pxH;py++){ for(int px=0;px<pxW;px++){
- // TODO: collect test results indirectly
- 		cout << "_";
-		depth = marcher->castRay(
-				5.0 * ((float)px)/((float)pxW) - 2.5,
-				5.0 * ((float)py)/((float)pxH) - 2.5
-			);
-		cout << py*pxW+px;
+
+      // give coordinates of given pixel, returns preselected value from ray test
+		depth = marcher->castRay(px - pxW/2,py - pxH/2);
+				//5.0 * ((float)px)/((float)pxW) - 2.5,
+				//5.0 * ((float)py)/((float)pxH) - 2.5
 
 		imager1->renderPixel();
-		cout << ",";
 		/*
 		if(depth == -1.0){
 			*head++ = 0;

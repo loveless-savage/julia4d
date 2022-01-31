@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include "mat4.h"
 #include "rayMarcher.h"
 
@@ -6,7 +7,7 @@
 class Imager {
 public:
 	//constructor
-	Imager (char* filename, int px, int py, float& d);
+	Imager (std::string filename, int px, int py, float& d);
 	// destructor
 	~Imager ();
 
@@ -15,7 +16,7 @@ public:
 
 	// print image to a file once rendering is finished
 	void print();
-	char* filename; // file name to write to - public for customization
+	std::string filename; // file name to write to - public for customization
 
 private:
 	// image size in pixels
@@ -43,18 +44,16 @@ public:
 	void renderOptions(int w, int h, int iterMax, RayMarcher::renderType rtype);
 
 	// render a photo at the current position
-	void takePhoto(char *filename);
+	void takePhoto(std::string filename);
 
 	// print data values for debugging
 	void dumpPos();
 	
-	// basis vectors described by the rotation matrix
-	vec4 *x,*y,*z,*w;
-	// additional camera positioning values
-	float distFromOrigin, fovSphereRadius;
 private:
 	// rotation coordinates
 	mat4 *pos, *rtemp;
+   // additional camera positioning values
+   float distFromOrigin, fovSphereRadius;
 
 	// rayMarcher handles all the math behind ray marching & julia set iteration
 	RayMarcher *marcher;

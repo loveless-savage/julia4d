@@ -17,50 +17,81 @@ void RayMarcher::renderOptions(int iterMaxi, RayMarcher::renderType rtypei){
 };
 
 // set up seed vectors
-void RayMarcher::orient(vec4 *rootZ, vec4 *rootX, vec4 *rootY, float distFromOrigin, float pxStepLength){
-	origin = (*rootZ) * (-1*distFromOrigin);
-	step0 = (*rootZ);
-	stepX = (*rootX) * pxStepLength;
-	stepY = (*rootY) * pxStepLength;
+void RayMarcher::orient(vec4 rootZ, vec4 rootX, vec4 rootY, float distFromOrigin, float pxStepLength){
+	origin = rootZ * (-1*distFromOrigin);
+	step0  = rootZ;
+	stepX  = rootX * pxStepLength;
+	stepY  = rootY * pxStepLength;
+   cout << "origin: ";
+   origin.dump();
+   cout << "\nstep0: ";
+   step0.dump();
+   cout << "\nstepX: ";
+   stepX.dump();
+   cout << "\nstepY: ";
+   stepY.dump();
+   cout << "\npxStepLength: " << pxStepLength << endl;
 };
-
-// test given pixel coordinates
-void RayMarcher::test(float pX, float pY){}
 
 // cast ray associated with given screen coordinates
 float RayMarcher::castRay(float pX, float pY){
+   //cout << "casting ray" << endl;
    // accumulate the total distance from camera to intersection w/ the fractal
-   float distSum=0;
+   distSum = 1.0;
 
-   // displace the starting ray a little to the side, as perscribed by the displacing vectors stepX & stepY
-   step = step0 + (stepX*pX) + (stepY*pY);
-   step = step.normalize();
+   // displace the starting ray a little to the side, as prescribed by the displacing vectors stepX & stepY
+   step = step0;
+   step += stepX*pX;
+   step += stepY*pY;
+   //step = step.normalize();
 
-   /*for testing*/ step.set(pX,pY,-0.8, 0.18);
+   // start the ray at the origin, which is not at (0,0,0,0) but is set a little ways out
+   pos = origin;
+   for(int i=0;i<10;i++) {
+      // don't add the next ray step yet! If we go to far & penetrate the set we need to backtrack.
+      // so instead of just passing pos, we pass pos+step*distSum
+      if ( jtest(pos + step*distSum) ){
+         // jtest() returns true if it falls within the set! Now we do one of two things:
+         // 1. If we just barely penetrated the set, we are good to render
+         if(distSum < 0.03) break; // TODO: tune threshold
+         // 2. If we punctured by a bigger margin, backtrack a bit for more accuracy
+         distSum *= 0.5; // TODO: tune backstepping
+         i--;
+         continue;
+      };
+      // if we haven't reached the set yet, check whether we've gone past the viewing sphere in the back
+      if(pos.dot(step)>0.0 && pos.length()){
+         // TODO
+      }
+      // march the ray forward
+      pos += step*distSum;
+      // from our new vantage point we can check the next distance
+      distSum = 0.5 * z_modulus * logf(z_modulus) / dpos.length();
+   }
 
-   /* eventually there will be a loop here in order to march the ray */
-   this->jtest();
-
-   // if it still passes the divergence test, color it black
-   if(n == iterMax) return -1.0;
+   //cout << "[" << dpos.length() << "/" << n << "]";
 
    switch (rtype) {
+      case RayMarcher::renderType::dstep :
+         return (pos-origin).length();
       case RayMarcher::renderType::distance :
-         return -1.0; // TODO
+         return distSum;
+         /*
       case RayMarcher::renderType::dz :
-         return sqrt(dz_step[Z0A]*dz_step[Z0A]+dz_step[Z0B]*dz_step[Z0B]);
+         return sqrt(dpos[Z0A]*dpos[Z0A] + dpos[Z0B]*dpos[Z0B]);
       case RayMarcher::renderType::dc :
-         return sqrt(dz_step[C0A]*dz_step[C0A]+dz_step[C0B]*dz_step[C0B]);
+         return sqrt(dpos[C0A]*dpos[C0A] + dpos[C0B]*dpos[C0B]);
+          */
       default:
-         return 0.1*n;
+         return 0.0;
    }
 }
 
 // while casting a ray, use current ray coordinates & run a julia test
-void RayMarcher::jtest(){
+float RayMarcher::jtest(vec4 posIn){
 	// computation variables- real & imaginary parts
-	za = step[Z0A]; // the macro Z0A accesses step[0]
-	zb = step[Z0B]; // ... & vice versa
+	za = posIn[Z0A]; // the macro Z0A accesses posIn[0]
+	zb = posIn[Z0B]; // ... & vice versa
 
 	/* C doesn't change with iteration, but Z does, so we differentiate Z_n...
 	 * with respect to all initial variables, in a 4x2 matrix like so:
@@ -74,41 +105,42 @@ void RayMarcher::jtest(){
 	 *  thus our matrix simplifies to the following:
 	 *  [ 
 	 */
-	dz_step.set(1,0,0,0);
+	dpos.set(1, 0, 0, 0);
 
 	// rollover for above variables
 	float zaQ, zbQ;
-	vec4 dzQ_step;
+	vec4 dposQ;
 
-	n=0;
-	while(n<iterMax){
-		if(za*za+zb*zb > 4.0) break; // fails the divergence test?
-
+	for(int n=0;n<iterMax;n++){
 		// iterate calculation, mimicking complex numbers:
 		// Z_n = Z_n-1^2 + C
-		zaQ = za*za - zb*zb + step[C0A];
-		zbQ = 2*za*zb + step[C0B];
+		zaQ = za*za - zb*zb + posIn[C0A];
+		zbQ = 2*za*zb + posIn[C0B];
 
 		/* derivatives:
 		 * d(Zn+1)/dZ0 = ( 2*za*d(z/dZ0)a - 2*zb*d(z/dZ0)b )
 		 *            + ( 2*za*d(z/dZ0)b + 2*zb*d(z/dZ0)a ) * i;
 		 * ... and vice versa for d(Zn+1)/dC
 		 *
-		 * since we have the macros Z0A,Z0B,C0A,C0B we can use them to access dzQ_step[] just like step[]
+		 * since we have the macros Z0A,Z0B,C0A,C0B we can use them to access dposQ[] just like posIn[]
 		 */
-		dzQ_step[Z0A] = 2*(za*dz_step[Z0A] - zb*dz_step[Z0B]);
-		dzQ_step[Z0B] = 2*(za*dz_step[Z0B] + zb*dz_step[Z0A]);
+		dposQ[Z0A] = 2 * (za * dpos[Z0A] - zb * dpos[Z0B]);
+      dposQ[Z0B] = 2 * (za * dpos[Z0B] + zb * dpos[Z0A]);
 
-		dzQ_step[C0A] = 2*(za*dz_step[C0A] - zb*dz_step[C0B]) + 1; // also, d(Zn+1)/dC = 1, so add 1 to the real part of /dC
-		dzQ_step[C0B]= 2*(za*dz_step[C0B]+ zb*dz_step[C0A]);
+      dposQ[C0A] = 2 * (za * dpos[C0A] - zb * dpos[C0B]) + 1; // also, d(Zn+1)/dC = 1, so add 1 to the real part of /dC
+		dposQ[C0B]= 2 * (za * dpos[C0B] + zb * dpos[C0A]);
 
 		// roll values
 		za = zaQ;
 		zb = zbQ;
-		dz_step.set(dzQ_step[0],dzQ_step[1],dzQ_step[2],dzQ_step[3]);
+		dpos.set(dposQ[0], dposQ[1], dposQ[2], dposQ[3]);
 
-		n++;
-	}
+      // absolute value of z == hypotenuse of a triangle
+      z_modulus = hypotf(za,zb);
+      if(z_modulus > 2.0) { // fails the divergence test?
+         return false;
+      }
+   }
 
-   return;
+   return true;
 };

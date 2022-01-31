@@ -1,9 +1,9 @@
 #pragma once
 // standard includes
-//#include <stdio.h>
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
+#include "vec4.h"
 using namespace std;
 
 class mat4 {
@@ -23,42 +23,9 @@ public:
 	// print data values for debugging
 	void dump();
 
+   // access columns of the matrix with vecShell handles
+   vecShell x,y,z,w;
 private:  
 	// data storage variable
 	float data[16];
-};
-
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@//
-
-class vec4 {
-public:
-	// constructor
-	vec4 ();
-	// constructor w/ ability to point it to already existing data values
-	vec4 (float &data);
-	// destructor
-	~vec4 ();
-	
-	// operator overloading
-	float& operator [](int idx);
-	void operator = (vec4 target);
-	vec4 operator + (vec4 target);
-	vec4 operator - (vec4 target);
-	vec4 operator * (float scalar);
-	vec4 operator / (float scalar);
-
-	// manually input values
-	void set (float a, float b, float c, float d);
-
-	// normalize vector
-	vec4 normalize();
-
-	// print data values for debugging
-	void dump();
-
-private:  
-	// data storage variable - pointer so that we can embed it in a mat4
-	float* data;
-	// in case we just want to initialize a vec4 on its own
-	bool isStandalone;
 };
