@@ -127,9 +127,9 @@ float vec4::dot(vec4 target){
 
 // print data values for debugging
 void vec4::dump(){
-   cout << endl;
+   cout << right << setprecision(6) << fixed;
    for (int i=0;i<4;i++){
-      cout << "\t" << data[i];
+      cout << setw(12) << data[i];
    }
    cout << endl;
 };

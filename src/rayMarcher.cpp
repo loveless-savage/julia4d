@@ -17,20 +17,24 @@ void RayMarcher::renderOptions(int iterMaxi, RayMarcher::renderType rtypei){
 };
 
 // set up seed vectors
-void RayMarcher::orient(vec4 rootZ, vec4 rootX, vec4 rootY, float distFromOrigin, float pxStepLength){
+void RayMarcher::orient(vec4 rootZ, vec4 rootX, vec4 rootY, float distFromOrigin, float fovSphereRadiusIn){
 	origin = rootZ * (-1*distFromOrigin);
 	step0  = rootZ;
-	stepX  = rootX * pxStepLength;
+
+   fovSphereRadius = fovSphereRadiusIn;
+   float pxStepLength = 2 * fovSphereRadius // actual width of the object
+                        / sqrt(distFromOrigin*distFromOrigin - fovSphereRadius * fovSphereRadius); // project world size to screen size
+   stepX  = rootX * pxStepLength;
 	stepY  = rootY * pxStepLength;
-   cout << "origin: ";
+   cout << "origin: " << endl;
    origin.dump();
-   cout << "\nstep0: ";
+   cout << "step0: " << endl;
    step0.dump();
-   cout << "\nstepX: ";
+   cout << "stepX: " << endl;
    stepX.dump();
-   cout << "\nstepY: ";
+   cout << "stepY: " << endl;
    stepY.dump();
-   cout << "\npxStepLength: " << pxStepLength << endl;
+   cout << "pxStepLength: " << pxStepLength << endl;
 };
 
 // cast ray associated with given screen coordinates
@@ -47,7 +51,7 @@ float RayMarcher::castRay(float pX, float pY){
 
    // start the ray at the origin, which is not at (0,0,0,0) but is set a little ways out
    pos = origin;
-   for(int i=0;i<10;i++) {
+   for(int i=0;i<16;i++) {
       // don't add the next ray step yet! If we go to far & penetrate the set we need to backtrack.
       // so instead of just passing pos, we pass pos+step*distSum
       if ( jtest(pos + step*distSum) ){
@@ -60,8 +64,8 @@ float RayMarcher::castRay(float pX, float pY){
          continue;
       };
       // if we haven't reached the set yet, check whether we've gone past the viewing sphere in the back
-      if(pos.dot(step)>0.0 && pos.length()){
-         // TODO
+      if(pos.dot(step)>0.0 && pos.length()>fovSphereRadius){
+         return -1.0;
       }
       // march the ray forward
       pos += step*distSum;

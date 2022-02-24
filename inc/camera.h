@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <ctime>
 #include "mat4.h"
 #include "rayMarcher.h"
 

@@ -34,7 +34,7 @@ float spectrumSkew(float depth,int color){
 
 // render next pixel in image
 void Imager::renderPixel(){
-		if(*depth == -1.0){
+		if(*depth == -1.0){ // TODO: add epsilon?
 			*head++ = 0;
 			*head++ = 0;
 			*head++ = 0;
@@ -124,10 +124,7 @@ void Camera::takePhoto(std::string filename){
 	marcher->orient(
 		pos->z,pos->x/fminf(pxW,pxH),pos->y/fminf(pxW,pxH), // 3 basis vectors
 		distFromOrigin, // distance of the camera from the origin
-
-	 // now we calculate step length to skew the base rendering vector between pixels:
-      2*fovSphereRadius // actual width of the object
-            / sqrt(distFromOrigin*distFromOrigin-fovSphereRadius*fovSphereRadius) // project world size to screen size
+      fovSphereRadius // size of the rear cutoff sphere
 	);
 
 
@@ -142,13 +139,16 @@ void Camera::takePhoto(std::string filename){
 	head = photo;
 	*/
 
+   // start a timer so we can track render times
+   float renderTime = (float)clock() / CLOCKS_PER_SEC;
+
 	cout << "Imager initialized. Starting render loop:" << endl;
 
 	// loop once per pixel- px & py give the current pixel coordinates
 	for(int py=0;py<pxH;py++){ for(int px=0;px<pxW;px++){
 
       // give coordinates of given pixel, returns preselected value from ray test
-		depth = marcher->castRay(px - pxW/2,py - pxH/2);
+		depth = marcher->castRay(px-pxW/2,py-pxH/2);
 				//5.0 * ((float)px)/((float)pxW) - 2.5,
 				//5.0 * ((float)py)/((float)pxH) - 2.5
 
@@ -166,7 +166,7 @@ void Camera::takePhoto(std::string filename){
 		*/
 	}}
 
-	cout << "\nrendering finished. printing to png file" << endl;
+	cout << "rendering finished. printing to png file" << endl;
 	
 	// print data to png file w/ given width/height, 3 colors, & data location
 	imager1->print();
@@ -175,6 +175,10 @@ void Camera::takePhoto(std::string filename){
 	stbi_write_png(filename, pxW,pxH, 3, photo, pxW*3);
 	delete[] photo;
 	*/
+
+   // compare the timer with starting time
+   renderTime = (float)clock() / CLOCKS_PER_SEC - renderTime;
+   cout << "render took " << renderTime << " seconds." << endl;
 };
 
 // print data values for debugging

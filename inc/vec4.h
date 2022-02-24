@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 using namespace std;
 
 class vec4 {

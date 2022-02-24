@@ -17,7 +17,7 @@ public:
 	void renderOptions(int iterMaxi, renderType rtypei);
 
 	// set up seed vectors
-	void orient(vec4 rootZ, vec4 rootX, vec4 rootY, float distFromOrigin, float pxStepLength);
+	void orient(vec4 rootZ, vec4 rootX, vec4 rootY, float distFromOrigin, float fovSphereRadiusIn);
 
    // cast ray associated with given screen coordinates
    float castRay(float pX, float pY);
@@ -33,6 +33,7 @@ private:
    vec4 pos; // current location of ray; coordinates are [ z0a, z0b, ca, cb ]
    vec4 dpos; // derivative of Z_n with respect to above variables ^
    float distSum; // how far do we march the ray this time?
+   float fovSphereRadius; // how far from the origin do we say we've passed the fractal?
 
    // julia test variables- stored outside jtest() so they can be accessed asynchronously
    float za,zb; // iteration value- real & imaginary
