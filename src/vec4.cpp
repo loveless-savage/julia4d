@@ -5,18 +5,25 @@
 vec4::vec4() {
    data = new float[4];
 };
+vec4::vec4 (const float *dataLoc){
+   data = new float[4];
+   data[0] = *(dataLoc + 0);
+   data[1] = *(dataLoc + 1);
+   data[2] = *(dataLoc + 2);
+   data[3] = *(dataLoc + 3);
+}
 // destructor
 vec4::~vec4 (){
-   // if we piggybacked off a mat4, we can't do this- it was already de-allocated by the mat4
-   //if(isStandalone) delete[] data;
+   //cout << "v";
+   delete data;
 };
 
 // operator overloading
-float &vec4::operator[](int idx) {
+float &vec4::operator[](int idx) const {
    return *(data + idx);
 }
 
-vec4 &vec4::operator=(vec4 target) {
+vec4 &vec4::operator=(const vec4& target) {
    data[0] = target[0];
    data[1] = target[1];
    data[2] = target[2];
@@ -24,7 +31,7 @@ vec4 &vec4::operator=(vec4 target) {
    return *this;
 };
 
-vec4 vec4::operator+(vec4 target) {
+vec4 vec4::operator+(const vec4& target) {
    vec4 result;
    result = *this;
    result[0] += target[0];
@@ -34,7 +41,7 @@ vec4 vec4::operator+(vec4 target) {
    return result;
 };
 
-vec4 &vec4::operator+=(vec4 target) {
+vec4 &vec4::operator+=(const vec4& target) {
    data[0] += target[0];
    data[1] += target[1];
    data[2] += target[2];
@@ -42,7 +49,7 @@ vec4 &vec4::operator+=(vec4 target) {
    return *this;
 };
 
-vec4 vec4::operator-(vec4 target) {
+vec4 vec4::operator-(const vec4& target) {
    vec4 result;
    result = *this;
    result[0] -= target[0];
@@ -52,7 +59,7 @@ vec4 vec4::operator-(vec4 target) {
    return result;
 };
 
-vec4 &vec4::operator-=(vec4 target) {
+vec4 &vec4::operator-=(const vec4& target) {
    data[0] -= target[0];
    data[1] -= target[1];
    data[2] -= target[2];
@@ -105,7 +112,7 @@ void vec4::set (float a, float b, float c, float d){
 };
 
 // vector length
-float vec4::length(){
+float vec4::length() const {
    float r = 0.0;
    for (int i=0;i<4;i++){
       r += data[i]*data[i];
@@ -118,7 +125,7 @@ vec4 vec4::normalize(){
 };
 
 // dot product
-float vec4::dot(vec4 target){
+float vec4::dot(const vec4& target) const {
    return data[0]*target[0]
       + data[1]*target[1]
       + data[2]*target[2]
@@ -126,18 +133,10 @@ float vec4::dot(vec4 target){
 }
 
 // print data values for debugging
-void vec4::dump(){
+void vec4::dump() const {
    cout << right << setprecision(6) << fixed;
    for (int i=0;i<4;i++){
       cout << setw(12) << data[i];
    }
    cout << endl;
 };
-
-
-// constructor w/ ability to point it to already existing data values
-vecShell::vecShell(float *dataIn){
-   data = dataIn;
-}
-// destructor- we do not delete any memory this time!
-vecShell::~vecShell() = default;

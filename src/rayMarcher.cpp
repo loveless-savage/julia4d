@@ -17,7 +17,7 @@ void RayMarcher::renderOptions(int iterMaxi, RayMarcher::renderType rtypei){
 };
 
 // set up seed vectors
-void RayMarcher::orient(vec4 rootZ, vec4 rootX, vec4 rootY, float distFromOrigin, float fovSphereRadiusIn){
+void RayMarcher::orient(vec4& rootZ, vec4& rootX, vec4& rootY, float distFromOrigin, float fovSphereRadiusIn){
 	origin = rootZ * (-1*distFromOrigin);
 	step0  = rootZ;
 

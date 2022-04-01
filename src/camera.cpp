@@ -9,7 +9,7 @@ using namespace std;
 
 
 //constructor
-Imager::Imager (std::string filename, int px, int py, float& d)
+Imager::Imager (const string& filename, int px, int py, float& d)
 	: filename(filename),pxW(px),pxH(py),depth(&d)
 {
 	// allocate space for rendering data - pxW*pxH pixels, 3 colors per pixel (RGB)
@@ -74,7 +74,11 @@ Camera::Camera(){
 }
 
 // destructor
-Camera::~Camera(){ delete pos, rtemp, marcher; }
+Camera::~Camera(){
+   delete pos;
+   delete rtemp;
+   delete marcher;
+}
 
 // rotate associated gimbal
 void Camera::rotate(int axisA, int axisB, float ang){
@@ -92,7 +96,7 @@ void Camera::renderOptions(int w, int h, int iterMax, RayMarcher::renderType rty
 };
 
 // render a photo at the current position
-void Camera::takePhoto(std::string filename){
+void Camera::takePhoto(const string& filename){
 /* distFromOrigin is fairly self-explanatory: distance from the camera to the origin
  * let D = distFromOrigin
  * fovSphereRadius describes the radius of the largest sphere to fall entirely within the camera's FOV
@@ -122,7 +126,7 @@ void Camera::takePhoto(std::string filename){
 
 	// set up ray marcher w/ seed vectors
 	marcher->orient(
-		pos->z,pos->x/fminf(pxW,pxH),pos->y/fminf(pxW,pxH), // 3 basis vectors
+		pos->axis(2),pos->axis(0)/fminf(pxW,pxH),pos->axis(1)/fminf(pxW,pxH), // 3 basis vectors
 		distFromOrigin, // distance of the camera from the origin
       fovSphereRadius // size of the rear cutoff sphere
 	);
@@ -142,7 +146,7 @@ void Camera::takePhoto(std::string filename){
    // start a timer so we can track render times
    float renderTime = (float)clock() / CLOCKS_PER_SEC;
 
-	cout << "Imager initialized. Starting render loop:" << endl;
+	cout << "Imager initialized. Starting render renderMain:" << endl;
 
 	// loop once per pixel- px & py give the current pixel coordinates
 	for(int py=0;py<pxH;py++){ for(int px=0;px<pxW;px++){

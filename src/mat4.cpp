@@ -1,17 +1,16 @@
 #include "mat4.h"
 
 // constructor
-mat4::mat4() :
-      x(data),
-      y(data+4),
-      z(data+8),
-      w(data+12)
-   {
+mat4::mat4() {
 	for (int i=0;i<16;i++) { // zero out the matrix
       data[i] = 0;
       if (i % 5 == 0) data[i] = 1; // add a strip of ones down the diagonal for the identity matrix
    }
 };
+// destructor
+mat4::~mat4(){
+   cout << "m";
+}
 
 // easy access to members of private data
 float &mat4::operator [](int idx){
@@ -69,8 +68,17 @@ void mat4::mult(mat4 rotor){
 	}
 };
 
+// get one axis of the mat4, formatted as a vec4
+vec4 mat4::axis(int axisNum) const {
+   if (axisNum < 0 || axisNum >= 4) {
+      cout << "mat4 error: attempted to access row " << axisNum << endl;
+      throw exception();
+   }
+   return vec4(&data[axisNum*4]);
+}
+
 // print data values for debugging
-void mat4::dump(){
+void mat4::dump() const {
 	for (int i=0;i<16;i++){
 		cout << ( (i%4==0)? "\n":"\t" );
 		cout << data[i];

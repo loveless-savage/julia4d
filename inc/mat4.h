@@ -10,7 +10,9 @@ class mat4 {
 public:
 	// constructor
 	mat4 ();
-	
+   // destructor
+   ~mat4();
+
 	// easy access to members of private data
 	float &operator [](int idx);
 
@@ -21,11 +23,11 @@ public:
 	void mult(mat4 rotor);
 
 	// print data values for debugging
-	void dump();
+	void dump() const;
 
    // access columns of the matrix with vecShell handles
-   vecShell x,y,z,w;
-private:  
+   vec4 axis(int axisNum) const;
+private:
 	// data storage variable
 	float data[16];
 };

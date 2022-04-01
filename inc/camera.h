@@ -8,7 +8,7 @@
 class Imager {
 public:
 	//constructor
-	Imager (std::string filename, int px, int py, float& d);
+	Imager (const string& filename, int px, int py, float& d);
 	// destructor
 	~Imager ();
 
@@ -45,7 +45,7 @@ public:
 	void renderOptions(int w, int h, int iterMax, RayMarcher::renderType rtype);
 
 	// render a photo at the current position
-	void takePhoto(std::string filename);
+	void takePhoto(const string& filename);
 
 	// print data values for debugging
 	void dumpPos();

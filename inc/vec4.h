@@ -8,18 +8,19 @@ using namespace std;
 
 class vec4 {
  public:
-   // constructor
+   // constructors
    vec4 ();
+   vec4 (const float *dataLoc);
    // destructor
    ~vec4 ();
 
    // operator overloading
-   vec4& operator = (vec4 target);
-   float& operator [](int idx);
-   vec4 operator + (vec4 target);
-   vec4& operator += (vec4 target);
-   vec4 operator - (vec4 target);
-   vec4& operator -= (vec4 target);
+   float& operator [](int idx) const;
+   vec4& operator = (const vec4& target);
+   vec4 operator + (const vec4& target);
+   vec4& operator += (const vec4& target);
+   vec4 operator - (const vec4& target);
+   vec4& operator -= (const vec4& target);
    vec4 operator * (float scalar);
    vec4& operator *= (float scalar);
    vec4 operator / (float scalar);
@@ -29,26 +30,16 @@ class vec4 {
    void set (float a, float b, float c, float d);
 
    // length of vector
-   float length();
-   // normalize vector
+   float length() const;
+   // normalize vector & return result
    vec4 normalize();
    // dot product
-   float dot(vec4 target);
+   float dot(const vec4& target) const;
 
    // print data values for debugging
-   void dump();
+   void dump() const;
 
  protected:
    // data storage variable - pointer so that we can embed it in a mat4
    float* data;
-};
-
-
-// vecShell has all properties of vec4, except that it points to pre-allocated data
-class vecShell : public vec4 {
- public:
-   // constructor w/ ability to point it to already existing data values
-   vecShell(float *dataIn);
-   // destructor
-   ~vecShell();
 };
