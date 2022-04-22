@@ -31,7 +31,7 @@ vec4 &vec4::operator=(const vec4& target) {
    return *this;
 };
 
-vec4 vec4::operator+(const vec4& target) {
+vec4 vec4::operator+(const vec4& target) const {
    vec4 result;
    result = *this;
    result[0] += target[0];
@@ -49,7 +49,7 @@ vec4 &vec4::operator+=(const vec4& target) {
    return *this;
 };
 
-vec4 vec4::operator-(const vec4& target) {
+vec4 vec4::operator-(const vec4& target) const {
    vec4 result;
    result = *this;
    result[0] -= target[0];
@@ -67,7 +67,7 @@ vec4 &vec4::operator-=(const vec4& target) {
    return *this;
 };
 
-vec4 vec4::operator*(float scalar) {
+vec4 vec4::operator*(float scalar) const {
    vec4 result;
    result = *this;
    result[0] *= scalar;
@@ -85,7 +85,7 @@ vec4 &vec4::operator*=(float scalar) {
    return *this;
 };
 
-vec4 vec4::operator/(float scalar) {
+vec4 vec4::operator/(float scalar) const {
    vec4 result;
    result = *this;
    result[0] /= scalar;

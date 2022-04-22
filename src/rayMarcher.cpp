@@ -17,7 +17,7 @@ void RayMarcher::renderOptions(int iterMaxi, RayMarcher::renderType rtypei){
 };
 
 // set up seed vectors
-void RayMarcher::orient(vec4& rootZ, vec4& rootX, vec4& rootY, float distFromOrigin, float fovSphereRadiusIn){
+void RayMarcher::orient(const vec4& rootZ, const vec4& rootX, const vec4& rootY, float distFromOrigin, float fovSphereRadiusIn){
 	origin = rootZ * (-1*distFromOrigin);
 	step0  = rootZ;
 
@@ -98,7 +98,7 @@ float RayMarcher::jtest(vec4 posIn){
 	zb = posIn[Z0B]; // ... & vice versa
 
 	/* C doesn't change with iteration, but Z does, so we differentiate Z_n...
-	 * with respect to all initial variables, in a 4x2 matrix like so:
+	 * with respect to all initial variables, in a 4x2 Jacobian matrix like so:
 	 * [ dzna/dz0a  dznb/dz0a ]
 	 * [ dzna/dz0b  dznb/dz0b ]
 	 * [ dzna/dca   dznb/dca  ]
@@ -107,7 +107,15 @@ float RayMarcher::jtest(vec4 posIn){
 	 *  d(Zn)/d(z0b) == d(Zn)/d(z0a) * i; and
 	 *  d(Zn)/d(cb) == d(Zn)/d(ca) * i;
 	 *  thus our matrix simplifies to the following:
-	 *  [ 
+	 * [ dzna/dz0a  dznb/dz0a ]
+	 * [-dznb/dz0a  dzna/dz0a ] *** new!
+	 * [ dzna/dca   dznb/dca  ]
+	 * [-dznb/dca   dzna/dca  ] *** new!
+	 * rows 2 and 4 are almost identical to rows 1 and 3, so we can derive them after the loop.
+	 * all we have to calculate now is:
+	 * [ dzna/dz0a  dznb/dz0a ]
+	 * [ dzna/dca   dznb/dca  ]
+	 * these four numbers are stored in the vec4 dpos[]
 	 */
 	dpos.set(1, 0, 0, 0);
 

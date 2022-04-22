@@ -17,7 +17,7 @@ public:
 	void renderOptions(int iterMaxi, renderType rtypei);
 
 	// set up seed vectors
-	void orient(vec4& rootZ, vec4& rootX, vec4& rootY, float distFromOrigin, float fovSphereRadiusIn);
+	void orient(const vec4& rootZ, const vec4& rootX, const vec4& rootY, float distFromOrigin, float fovSphereRadiusIn);
 
    // cast ray associated with given screen coordinates
    float castRay(float pX, float pY);

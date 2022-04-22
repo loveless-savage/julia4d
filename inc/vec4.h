@@ -17,13 +17,13 @@ class vec4 {
    // operator overloading
    float& operator [](int idx) const;
    vec4& operator = (const vec4& target);
-   vec4 operator + (const vec4& target);
+   vec4 operator + (const vec4& target) const;
    vec4& operator += (const vec4& target);
-   vec4 operator - (const vec4& target);
+   vec4 operator - (const vec4& target) const;
    vec4& operator -= (const vec4& target);
-   vec4 operator * (float scalar);
+   vec4 operator * (float scalar) const;
    vec4& operator *= (float scalar);
-   vec4 operator / (float scalar);
+   vec4 operator / (float scalar) const;
    vec4& operator /= (float scalar);
 
    // manually input values

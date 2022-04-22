@@ -2,55 +2,17 @@
 
 
 
-// search a vector of globs to find the matching name
-GlobShell* findGlobByName(vector<GlobShell>& globs, const string& searchName){
-   // search through all members of the vector globs
-   for(auto& glob : globs){
-      if(glob.name == searchName){
-         return &glob;
-      }
-   }
-   // if we haven't returned yet there isn't a match in the vector
-   cout << "Error: no match for glob named " << searchName << endl;
-   throw exception();
-}
-/*
-UniformShell* findGlobByName(vector<UniformShell>& globs, const string& searchName){
-// search through all members of the vector globs
-   for(auto& glob : globs){
-      if(glob.name == searchName){
-         return &glob;
-      }
-   }
-   // if we haven't returned yet there isn't a match in the vector
-   cout << "Error: no match for uniform named " << searchName << endl;
-   throw exception();
-}
- */
-ShaderShell* findGlobByName(vector<ShaderShell>& globs, const string& searchName){
-   // search through all members of the vector globs
-   for(auto& glob : globs){
-      if(glob.name == searchName){
-         return &glob;
-      }
-   }
-   // if we haven't returned yet there isn't a match in the vector
-   cout << "Error: no match for shader named " << searchName << endl;
-   throw exception();
-}
-
-
 // constructor
 Glwindow::Glwindow(int width, int height)
       : W(width), H(height), shouldStayOpen(true)
 {
    glfwStart();
-   win = glfwCreateWindow(W, H, "julia4D",NULL,NULL);
-   if(!win){
+   window = glfwCreateWindow(W, H, "julia4D", NULL, NULL);
+   if(!window){
       cerr << "Couldn't create window" << endl;
       throw exception();
    }
-   glfwMakeContextCurrent(win);
+   glfwMakeContextCurrent(window);
    glewExperimental = true;
    if(glewInit() != GLEW_OK){
       cerr << "Couldn't initialize glew" << endl;
@@ -58,12 +20,16 @@ Glwindow::Glwindow(int width, int height)
    }
    setupGL();
 
-   // add default framebuffer as an option
-   fbos.push_back({"main",0});
+   // the shader main_frag.glsl always renders to the screen, so set it up w/out an attached FBO
+   shaders.push_back({});
+   focusShader = &(shaders.at(0));
+   focusShader->name = "main";
+   focusShader->fboID = 0;
+   loadShaderFiles();
 };
 // destructor
 Glwindow::~Glwindow(){
-   glfwDestroyWindow(win);
+   glfwDestroyWindow(window);
    glfwTerminate();
 };
 
@@ -72,12 +38,13 @@ void Glwindow::addShader(const string& shaderName){
    shaders.push_back({});
    focusShader = &(shaders.back());
    focusShader->name = shaderName;
-   loadShaders();
-   // by default, there is no attached texture
+   loadShaderFiles();
+   // every shader has an associated FrameBuffer Object (FBO)
+   glGenFramebuffers(1,&(focusShader->fboID));
 }
 
 // set up a new texture to be used by whichever shader likes
-void Glwindow::addFBOTexture(const string& texName){
+void Glwindow::addIOTexture(const string& texName){
    textures.push_back({});
    focusTex = &(textures.back());
    focusTex->name = texName;
@@ -95,86 +62,63 @@ void Glwindow::addFBOTexture(const string& texName){
                 nullptr);
    // other general texture settings
    texConfig();
+}
 
-   // each of these textures has an associated Framebuffer object
-   fbos.push_back({});
-   fbos.back().name = texName;
-   glGenFramebuffers(1,&(fbos.back().ID));
-   glBindFramebuffer(GL_FRAMEBUFFER,fbos.back().ID);
+// let the Glwindow object know to assign a texture as input to a shader
+void Glwindow::attachTexIn(const string& shaderName, const string& texName){
+   // fetch from the shader and texture vectors by name
+   focusShader = ShaderShell::findByName(shaders, shaderName);
+   focusShader->texturesIn.push_back( TexShell::findByName(textures, texName) );
+}
 
-   // connect framebuffer and texture together
-   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, focusTex->ID, 0);
+// let the Glwindow object know to assign a texture as input to a shader
+void Glwindow::attachTexOut(const string& shaderName, const string& texName) {
+   focusShader = ShaderShell::findByName(shaders, shaderName);
+   glBindFramebuffer(GL_FRAMEBUFFER,focusShader->fboID);
+
+   // add texture to list of outputs
+   focusShader->texturesOut.push_back(focusTex);
+
+   // how many texture outputs are there? We will bind this one after all the others
+   GLuint texOutCount = focusShader->texturesOut.size() - 1;
+   // connect texture to fbo in the OpenGL context
+   focusTex = TexShell::findByName(textures, texName);
+   glFramebufferTexture2D(
+         GL_FRAMEBUFFER,
+         GL_COLOR_ATTACHMENT0 + texOutCount,
+         GL_TEXTURE_2D,
+         focusTex->ID,
+         0
+      );
    // error checking
    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
-      cout << "Framebuffer error " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << endl;
-      throw exception();
+      cerr << "Framebuffer error " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << endl;
    }
 }
 
 // load uniform variables from shader files
 void Glwindow::attachUniform(const string& pgmName, const char* uName, GLenum type, void* glLocation){
-   focusShader = findGlobByName(shaders, pgmName);
+   focusShader = ShaderShell::findByName(shaders, pgmName);
    GLint uLocation = glGetUniformLocation(focusShader->ID,uName);
    if (uLocation < 0){
-      cout << "ERROR: cannot retrieve uniform variable '" << uName << "' from program '" << pgmName << "' : loc=" << uLocation << endl;
-      throw exception();
+      cerr << "ERROR: cannot retrieve uniform variable '" << uName << "' from program '" << pgmName << "' : loc=" << uLocation << endl;
    }
    focusShader->uniforms.push_back({uName, uLocation, type, glLocation});
 }
 
-// associate a texture to a shader so they both get bound together
-void Glwindow::attachTexInput(const string& shaderName, const string& texName){
-   // fetch from the shader and texture vectors by name
-   focusShader = findGlobByName(shaders, shaderName);
-   focusShader->texturesIn.push_back(findGlobByName(textures, texName) );
-}
-
-
-// run this to render to the screen
-void Glwindow::renderMain(const string& shaderName){
-   focusShader = findGlobByName(shaders, shaderName);
-   glUseProgram(focusShader->ID);
-
-   // if we were using an off-screen framebuffer, this switches it back
-   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-   // we're only using two triangles so depth testing isn't necessary
-   glDisable(GL_DEPTH_TEST);
-   glClearColor(0.f,0.f,0.f,1.f);
-   glClear(GL_COLOR_BUFFER_BIT);
-
-   for (int i=0; i<focusShader->texturesIn.size(); i++) {
-      focusTex = focusShader->texturesIn.at(i);
-      glActiveTexture(GL_TEXTURE0 + i);
-      glBindTexture(GL_TEXTURE_2D, focusTex->ID);
-      glUniform1i(glGetUniformLocation(focusShader->ID, focusTex->name.c_str()), i);
-   }
-
-   // send it all off to the graphics card!
-   glDrawArrays(GL_TRIANGLE_STRIP,0,4);
-
-   // finalize drawing to the screen and listen for the escape key
-   glfwSwapBuffers(win);
-   glfwPollEvents();
-   shouldStayOpen =
-         glfwGetKey(win, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
-         glfwWindowShouldClose(win) == 0;
-}
 
 // in case we want to render off-screen
-void Glwindow::renderToTex(const string& shaderName, const string& texName){
-   // which framebuffer are we using?
-   focusFBO = findGlobByName(fbos, texName);
-   glBindFramebuffer(GL_FRAMEBUFFER, focusFBO->ID);
-   // we're only using two triangles so depth testing isn't necessary
-   glDisable(GL_DEPTH_TEST);
-   glClear(GL_COLOR_BUFFER_BIT);
+void Glwindow::render(const string &shaderName) {
+   // bring shader and associated FBO into context
+   focusShader = ShaderShell::findByName(shaders, shaderName);
+   glUseProgram(focusShader->ID);
+   glBindFramebuffer(GL_FRAMEBUFFER,focusShader->fboID);
+   // error checking for FBO binding
    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-      cout << "Framebuffer error " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << endl;
+      cerr << "Framebuffer error " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << endl;
    }
 
-   focusShader = findGlobByName(shaders, shaderName);
-   glUseProgram(focusShader->ID);
-
+   // activate input uniforms associated with this shader
    for (const UniformShell& focusU : focusShader->uniforms) {
       activateUniform(focusU);
    }
@@ -187,8 +131,36 @@ void Glwindow::renderToTex(const string& shaderName, const string& texName){
       glUniform1i(glGetUniformLocation(focusShader->ID, focusTex->name.c_str()), i);
    }
 
+   // output textures are already bound, but we need to make them visible
+   if (focusShader->fboID != 0) {
+      GLuint texOutCount = focusShader->texturesOut.size();
+      if (texOutCount == 0){
+         cerr << "shader '" << shaderName << "' has no output textures bound!" << endl;
+      }
+      glDrawBuffers(texOutCount, Glwindow::colorAttachmentCodes);
+   }
+
+   // we're only using two triangles so depth testing isn't necessary
+   glDisable(GL_DEPTH_TEST);
+   glClear(GL_COLOR_BUFFER_BIT);
+   // send it all off to the graphics card!
    glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 
+}
+
+// run this to render to the screen
+void Glwindow::renderMain() {
+   // rendering to the screen just includes a couple extra steps after normal rendering
+   render("main");
+
+   // finalize drawing to the screen
+   glfwSwapBuffers(window);
+   // collect keyboard and mouse input
+   glfwPollEvents();
+   // if escape key is pressed, send the signal to terminate the program
+   shouldStayOpen =
+         glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
+         glfwWindowShouldClose(window) == 0;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -204,17 +176,9 @@ int Glwindow::glfwStart() {
    return 0;
 };
 
-// two triangles to cover the viewport
-const GLfloat fullViewTriangles[8] = {
-      -1.f,-1.f,
-      -1.f,1.f,
-      1.f,-1.f,
-      1.f,1.f
-};
-
 // set up various circumstances related to OpenGL
 void Glwindow::setupGL(){
-   glfwSetInputMode(win, GLFW_STICKY_KEYS, GL_TRUE);
+   glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
    glClearColor(1.,0.,0.,1.);
 
    // set up buffers to hold triangle vertices
@@ -223,7 +187,7 @@ void Glwindow::setupGL(){
    // give our array of viewport-filling triangles to the OpenGL context
    glBindVertexArray(vao);
    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-   glBufferData(GL_ARRAY_BUFFER, sizeof(fullViewTriangles), fullViewTriangles, GL_STATIC_DRAW);
+   glBufferData(GL_ARRAY_BUFFER, sizeof(Glwindow::fullViewTriangles), Glwindow::fullViewTriangles, GL_STATIC_DRAW);
    // pass triangle data to vertex shader
    glEnableVertexAttribArray(0);
    glVertexAttribPointer(
@@ -242,7 +206,7 @@ void Glwindow::setupGL(){
 };
 
 // load shaders
-void Glwindow::loadShaders(){
+void Glwindow::loadShaderFiles(){
    // Read the Vertex Shader code from the file- always the same default vertex shader
    string vertShaderName = "shaders/_vert.glsl";
    ifstream VertexShaderStream(vertShaderName);
@@ -269,7 +233,7 @@ void Glwindow::loadShaders(){
    if(!shaderCompileSuccess) {
       char infoLog[512];
       glGetShaderInfoLog(vertShader, 512, NULL, infoLog);
-      cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << endl;
+      cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << endl;
    }
 
 
@@ -294,7 +258,7 @@ void Glwindow::loadShaders(){
    if(!shaderCompileSuccess) {
       char infoLog[512];
       glGetShaderInfoLog(fragShader, 512, NULL, infoLog);
-      cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << endl;
+      cerr << fragShaderName << " FAILED TO COMPILE:\n" << infoLog << endl;
    }
 
    // create new shader program & link it to compiled shaders
@@ -378,8 +342,36 @@ void Glwindow::activateUniform(const UniformShell& focusU){
 
 // ask about keyboard input
 bool Glwindow::isPressed(int key) const {
-   return (glfwGetKey(win, key) == GLFW_PRESS);
+   return (glfwGetKey(window, key) == GLFW_PRESS);
 }
 
 // see if it's time to close the window
 bool Glwindow::stayOpen() const { return shouldStayOpen; }
+
+// two triangles to cover the viewport
+const GLfloat Glwindow::fullViewTriangles[8] = {
+      -1.f,-1.f,
+      -1.f,1.f,
+      1.f,-1.f,
+      1.f,1.f
+};
+
+// array of color attachment codes to enable multiple output textures
+const GLenum Glwindow::colorAttachmentCodes[16] = {
+      GL_COLOR_ATTACHMENT0,
+      GL_COLOR_ATTACHMENT1,
+      GL_COLOR_ATTACHMENT2,
+      GL_COLOR_ATTACHMENT3,
+      GL_COLOR_ATTACHMENT4,
+      GL_COLOR_ATTACHMENT5,
+      GL_COLOR_ATTACHMENT6,
+      GL_COLOR_ATTACHMENT7,
+      GL_COLOR_ATTACHMENT8,
+      GL_COLOR_ATTACHMENT9,
+      GL_COLOR_ATTACHMENT10,
+      GL_COLOR_ATTACHMENT11,
+      GL_COLOR_ATTACHMENT12,
+      GL_COLOR_ATTACHMENT13,
+      GL_COLOR_ATTACHMENT14,
+      GL_COLOR_ATTACHMENT15
+};

@@ -8,31 +8,39 @@ const int IMG_SIZE = 600;
 
 
 int main(int argc, char** argv){
-   MultipassWindow* w = new MultipassWindow(IMG_SIZE, IMG_SIZE);
+   Glwindow* w = new MultipassWindow(IMG_SIZE, IMG_SIZE);
 
    w->addShader("julia");
-   w->addShader("mandelbrot");
-   w->addShader("mpTest");
-   w->addShader("render");
+   //w->addShader("mandelbrot");
+   //w->addShader("mpTest");
+   w->addShader("main");
 
    float offsetamt[2] = {0.0,0.0};
    w->attachUniform("julia", "offset", GL_FLOAT_VEC2, offsetamt);
+   int mode = 0;
+   w->attachUniform("main", "mode", GL_INT, &mode);
 
-   w->addMultipassTex("juliaTex");
-   w->addFBOTexture("mandelbrotTex");
+   //w->addMultipassTex("juliaTex");
+   w->addIOTexture("juliaTex");
+   w->addIOTexture("dJuliaTex");
+   //w->addTexture("mandelbrotTex");
 
    // mpTest will use juliaTex as a multipass, but render will use it ordinarily
-   //myWindow->attachTexInput("mpTest", "juliaTex_I");
-   w->attachTexInput("mpTest", "juliaTex");
-   w->attachTexInput("render", "juliaTex");
-   //myWindow->attachTexInput("render","mandelbrotTex");
+   w->attachTexOut("julia","juliaTex");
+   w->attachTexOut("julia","dJuliaTex");
+   //w->attachTexInput("mpTest", "juliaTex_I");
+   //w->attachTexInput("mpTest", "juliaTex");
+   w->attachTexIn("main", "juliaTex");
+   w->attachTexIn("main", "dJuliaTex");
+   //w->attachTexInput("main","mandelbrotTex");
 
 
-   //myWindow->renderToTex("julia","juliaTex");
-   //myWindow->renderToMPTex("mpTest", "juliaTex");
-   //myWindow->renderMain("render",stayOpen);
+   //w->render("julia","juliaTex");
+   //w->renderToMPTex("mpTest", "juliaTex");
+   //w->renderMain("main",stayOpen);
    const float MOVEAMT = 0.001;
    do{
+      // adjust z_0 with arrow keys
       if (w->isPressed(GLFW_KEY_UP)) {
          offsetamt[1] += MOVEAMT;
       } else if (w->isPressed(GLFW_KEY_DOWN)) {
@@ -43,17 +51,31 @@ int main(int argc, char** argv){
       } else if (w->isPressed(GLFW_KEY_LEFT)) {
          offsetamt[0] -= MOVEAMT;
       }
+
       // draw julia fractal in background buffer
-      w->renderToTex("julia", "juliaTex");
-      //myWindow->renderToTex("mandelbrot","mandelbrotTex");
-      //myWindow->swapTextures("juliaTex","juliaTex_I");
-      //myWindow->renderToMPTex("mpTest", "juliaTex");
+      w->render("julia");
+      //w->render("mandelbrot");
+      //w->renderToMPTex("mpTest", "juliaTex");
+
+      // change visible parameter with number keys
+      if (w->isPressed(GLFW_KEY_1)) {
+         mode = 0;
+      } else if (w->isPressed(GLFW_KEY_2)) {
+         mode = 1;
+      } else if (w->isPressed(GLFW_KEY_3)) {
+         mode = 2;
+      } else if (w->isPressed(GLFW_KEY_4)) {
+         mode = 3;
+      } else if (w->isPressed(GLFW_KEY_5)) {
+         mode = 4;
+      }
 
       // use render shader to port the final result to the screen
-      w->renderMain("render");
-   } while (w->stayOpen());
+      w->renderMain();
+   } while(w->stayOpen());
    cout << "glGetError: " << glGetError() << endl;
 	// pull rotation info from input
+   delete w;
    return 0; // FIXME
 	// initialize & orient camera object
    Camera *cam = new Camera();

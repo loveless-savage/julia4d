@@ -1,11 +1,6 @@
 #pragma once
 #include "glwindow.h"
 
-struct MPTexShell {
- public:
-   string name;
-   GlobShell *texA, *texB;
-};
 
 class MultipassWindow : public Glwindow {
  public:
