@@ -55,18 +55,23 @@ void Imager::print(){
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@//
 /* Camera */
 // constructor
-Camera::Camera(){
+Camera::Camera() :
+// these are some pretty good default values for camera positioning
+         // when the camera is twice the distance from the origin as the object's size,
+         distFromOrigin(3.0),
+         // it leads to a comfortable 30degree viewing angle
+         fovSphereRadius(2.5),
+         // we will adjust this in a moment
+         fovStepLength(0.0)
+{
 	pos = new mat4();
 	rtemp = new mat4();
 
 	marcher = new RayMarcher();
 
- // these are some pretty good default values for camera positioning
-   // this corresponds to the size of the actual julia set, 2.0 units with a little wiggle room
-   fovSphereRadius = 2.5;
-   // when the camera is twice the distance from the origin as the object's size,
-   // it leads to a comfortable 30degree viewing angle
-   distFromOrigin = 5.0;
+   // fovSphereRadius is already at the correct size, so don't change it...
+   // ...but this command will sync fovStepLength to match the FOV Sphere
+   adjustFovSphereRadius(0);
 
    // default values for image size
 	pxW = 500;
@@ -85,7 +90,33 @@ void Camera::rotate(int axisA, int axisB, float ang){
 	//cout << "rotating around axes " << axisA << "," << axisB << " by " << ang << endl;
 	rtemp->buildRotor(axisA,axisB,ang);
 	pos->mult(*rtemp);
+   pos->updateVectorAxes(fovStepLength,fovStepLength);
 	//pos->dump();
+};
+// approach & retreat the camera from the origin
+void Camera::adjustDistFromOrigin(float dr){
+   distFromOrigin += dr;
+   fovSphereRadius = distFromOrigin // scale from projected length to world length
+                     * fovStepLength / sqrt(1+fovStepLength*fovStepLength); // triangle ratio
+}
+// change the viewing radius, via the radius of the FOV sphere centered at the origin
+void Camera::adjustFovSphereRadius(float dr){
+   fovSphereRadius += dr;
+   fovStepLength = fovSphereRadius // actual width of the object
+                   / sqrt(distFromOrigin*distFromOrigin - fovSphereRadius * fovSphereRadius); // triangle ratio
+
+   pos->updateVectorAxes(fovStepLength,fovStepLength);
+}
+
+
+// associate camera with an OpenGL rendering window
+void Camera::GLWindowTarget(Glwindow *target, const char* shaderName) {
+   target->attachUniform(shaderName,"cameraX",GL_FLOAT_VEC4,  pos->x.dataPtr());
+   target->attachUniform(shaderName,"cameraY",GL_FLOAT_VEC4,  pos->y.dataPtr());
+   target->attachUniform(shaderName,"cameraDir",GL_FLOAT_VEC4,pos->z.dataPtr());
+   target->attachUniform(shaderName,"cameraDist",GL_FLOAT,&distFromOrigin);
+   target->attachUniform(shaderName,"fovStepLength",GL_FLOAT,&fovStepLength);
+   target->attachUniform(shaderName,"fovSphereRadius",GL_FLOAT,&fovSphereRadius);
 };
 
 // resize future photos
@@ -125,11 +156,12 @@ void Camera::takePhoto(const string& filename){
  */
 
 	// set up ray marcher w/ seed vectors
-	marcher->orient(
-		pos->axis(2),pos->axis(0)/fminf(pxW,pxH),pos->axis(1)/fminf(pxW,pxH), // 3 basis vectors
-		distFromOrigin, // distance of the camera from the origin
-      fovSphereRadius // size of the rear cutoff sphere
-	);
+   marcher->orient(
+         pos->z, pos->x / fminf(pxW, pxH),
+         pos->y / fminf(pxW, pxH), // 3 basis vectors
+         distFromOrigin, // distance of the camera from the origin
+         fovSphereRadius // size of the rear cutoff sphere
+   );
 
 
 	// capture value of scalar returned by test
@@ -186,4 +218,4 @@ void Camera::takePhoto(const string& filename){
 };
 
 // print data values for debugging
-void Camera::dumpPos(){ pos->dump(); };
+void Camera::dumpPos(){ pos->dump(); }

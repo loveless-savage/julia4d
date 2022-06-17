@@ -1,16 +1,21 @@
 #version 460 core
-in vec4 pixelRayCoord;
+in vec4 stepX, stepY;
 
-uniform vec2 offset;
+uniform vec4 cameraDir;
+uniform float cameraDist;
+uniform float fovStepLength;
 //uniform vec2 z0;
 
-layout (location=0) out vec4 fragColor;
+layout (location=0) out float fragColor;
 layout (location=1) out vec4 dFragColor;
 
 void main(){
-    fragColor = pixelRayCoord;
-    vec2 z = pixelRayCoord.xy;
-    vec2 c = offset;
+    vec4 pos = stepX + stepY;
+    // since for the 2D julia set, we are using direct coordinates, remove the scalar for FOV projection
+    pos *= 2.f/fovStepLength;
+    pos += cameraDir * cameraDist;
+    vec2 z = pos.xy;
+    vec2 c = pos.zw;
     // derivative of z w/ respect to z0
     vec4 dz = vec4(1.f,0.f,0.f,0.f);
 
@@ -20,10 +25,12 @@ void main(){
         dz = vec4(
             z.x*dz.x - z.y*dz.y,
             z.x*dz.y + z.y*dz.x,
-            z.x*dz.z - z.y*dz.w + 1.f,
+            z.x*dz.z - z.y*dz.w,
             z.x*dz.w + z.y*dz.z
         );
         dz *= 2.f;
+        dz.z += 1.f;
+
         // now interate z
         z = vec2(
             z.x*z.x - z.y*z.y + c.x,
@@ -33,17 +40,17 @@ void main(){
     }
 
     if (i == 24){
-        fragColor = vec4(0.f);
+        fragColor = 0.f;
         dFragColor = vec4(0.f);
         return;
-    }
+    } // TODO: drop pixel?
 
     // coloring based on iteration count
-    fragColor = vec4(0.f);
-    fragColor.x = i/32.f;
+    fragColor = i;
+    //fragColor.x = i/32.f;
     // coloring based on derivative
     dFragColor = dz;
-
+    //dFragColor = mod(dFragColor,1.f);
 
     /*
     fragColor = vec4(i/8.f);

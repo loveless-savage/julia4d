@@ -20,11 +20,11 @@ class Glwindow {
    // set up a new shader to be used pre-screen render
    void addShader(const string& shaderName);
    // set up a new texture to be used by whichever shader likes
-   void addIOTexture(const string& texName);
+   void addIOTexture(const string &texName, const GLint internalFormat = GL_RGBA32F); // default format = 4-color, non-clamped floating value per fragment
 
    // associate a texture to a shader so they both get bound together
    void attachTexIn(const string& shaderName, const string& texName);
-   void attachTexOut(const string& shaderName, const string& texName);
+   void attachTexOut(const string& shaderName, const string& texName); //
    // load uniform variables from shader files
    void attachUniform(const string& pgmName, const char* uName, GLenum type, void* glLocation);
 
@@ -43,8 +43,10 @@ class Glwindow {
    GLFWwindow* window;
    // window size
    int W, H;
-   // OpenGL variables
+   // OpenGL variables to keep track of the 2 triangles spanning the viewport
    GLuint vao, vbo;
+   // we use the same vertex shader for all the fragment shader programs
+   GLuint vertShader;
    // turn this to false when it's time for the window to close
    bool shouldStayOpen;
 
@@ -60,11 +62,12 @@ class Glwindow {
    // set up universal OpenGL contexts
    void setupGL();
    // load shaders
-   void loadShaderFiles(); // TODO: separate vertex shader compilation
+   void loadVertShaderFile(); // called only once
+   void loadFragShaderFile(); // called every time a new fragment shader is requested
    // universal texture settings
-   void texConfig();
+   static void texConfig();
    // this wrapper makes uniform activation convenient, despite various types
-   void activateUniform(const UniformShell& focusU); // TODO: virtual GlobShell::activate()?
+   static void activateUniform(const UniformShell& focusU); // TODO: virtual GlobShell::activate()?
 
    // two triangles to cover the viewport
    static const GLfloat fullViewTriangles[8];

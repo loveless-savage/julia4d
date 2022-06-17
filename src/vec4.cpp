@@ -1,4 +1,5 @@
 #include "vec4.h"
+#include "mat4.h"
 
 
 // constructor
@@ -7,14 +8,10 @@ vec4::vec4() {
 };
 vec4::vec4 (const float *dataLoc){
    data = new float[4];
-   data[0] = *(dataLoc + 0);
-   data[1] = *(dataLoc + 1);
-   data[2] = *(dataLoc + 2);
-   data[3] = *(dataLoc + 3);
+   *this = dataLoc;
 }
 // destructor
 vec4::~vec4 (){
-   //cout << "v";
    delete data;
 };
 
@@ -24,6 +21,14 @@ float &vec4::operator[](int idx) const {
 }
 
 vec4 &vec4::operator=(const vec4& target) {
+   data[0] = target[0];
+   data[1] = target[1];
+   data[2] = target[2];
+   data[3] = target[3];
+   return *this;
+};
+
+vec4& vec4::operator = (const float* target) {
    data[0] = target[0];
    data[1] = target[1];
    data[2] = target[2];
@@ -132,6 +137,26 @@ float vec4::dot(const vec4& target) const {
       + data[3]*target[3];
 }
 
+// rotate
+// TODO: direct trig adjustment
+void vec4::rotate(int axisA, int axisB, float ang){
+   mat4 rtemp;
+   rtemp.buildRotor(axisA,axisB,ang);
+
+   vec4 result;
+   result[0] = this->dot(rtemp.x);
+   result[1] = this->dot(rtemp.y);
+   result[2] = this->dot(rtemp.z);
+   result[3] = this->dot(rtemp.w);
+   this->operator=(result);
+}
+
+// return const pointer to data
+float* vec4::dataPtr() const {
+   return data;
+};
+
+
 // print data values for debugging
 void vec4::dump() const {
    cout << right << setprecision(6) << fixed;
@@ -139,4 +164,4 @@ void vec4::dump() const {
       cout << setw(12) << data[i];
    }
    cout << endl;
-};
+}

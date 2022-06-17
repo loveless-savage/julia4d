@@ -20,40 +20,47 @@ Glwindow::Glwindow(int width, int height)
    }
    setupGL();
 
+   // compile the commonly shared vertex shader:
+   loadVertShaderFile();
+
    // the shader main_frag.glsl always renders to the screen, so set it up w/out an attached FBO
-   shaders.push_back({});
+   shaders.emplace_back();
    focusShader = &(shaders.at(0));
    focusShader->name = "main";
    focusShader->fboID = 0;
-   loadShaderFiles();
+   loadFragShaderFile();
 };
 // destructor
 Glwindow::~Glwindow(){
-   glfwDestroyWindow(window);
+   glDeleteShader(vertShader);
+   glfwDestroyWindow(window); // TODO: what's wrong with this boi?
    glfwTerminate();
+   cout << endl << "glfwGetError() = " << glfwGetError(NULL);
+   cout << endl << "glGetError() = " << glGetError();
 };
 
 // set up a new buffer with a shader of its own
 void Glwindow::addShader(const string& shaderName){
-   shaders.push_back({});
+   shaders.emplace_back();
    focusShader = &(shaders.back());
    focusShader->name = shaderName;
-   loadShaderFiles();
+   loadFragShaderFile();
    // every shader has an associated FrameBuffer Object (FBO)
    glGenFramebuffers(1,&(focusShader->fboID));
 }
 
 // set up a new texture to be used by whichever shader likes
-void Glwindow::addIOTexture(const string& texName){
-   textures.push_back({});
+void Glwindow::addIOTexture(const string &texName, const GLint internalFormat) {
+   textures.emplace_back();
    focusTex = &(textures.back());
    focusTex->name = texName;
+
    glGenTextures(1,&(focusTex->ID));
    glBindTexture(GL_TEXTURE_2D, focusTex->ID);
    // give empty texture data, since we'll use a shader to write to it
    glTexImage2D(GL_TEXTURE_2D,
                 0,
-                GL_RGBA,
+                internalFormat,
                 W,
                 H,
                 0,
@@ -77,12 +84,12 @@ void Glwindow::attachTexOut(const string& shaderName, const string& texName) {
    glBindFramebuffer(GL_FRAMEBUFFER,focusShader->fboID);
 
    // add texture to list of outputs
+   focusTex = TexShell::findByName(textures, texName);
    focusShader->texturesOut.push_back(focusTex);
 
    // how many texture outputs are there? We will bind this one after all the others
    GLuint texOutCount = focusShader->texturesOut.size() - 1;
    // connect texture to fbo in the OpenGL context
-   focusTex = TexShell::findByName(textures, texName);
    glFramebufferTexture2D(
          GL_FRAMEBUFFER,
          GL_COLOR_ATTACHMENT0 + texOutCount,
@@ -92,7 +99,8 @@ void Glwindow::attachTexOut(const string& shaderName, const string& texName) {
       );
    // error checking
    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
-      cerr << "Framebuffer error " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << endl;
+      cerr << "attachTexOut(): Framebuffer error binding shader '" << focusShader->name << "' to texture '" << texName << "':" << endl;
+      cerr << glCheckFramebufferStatus(GL_FRAMEBUFFER) << endl;
    }
 }
 
@@ -101,9 +109,10 @@ void Glwindow::attachUniform(const string& pgmName, const char* uName, GLenum ty
    focusShader = ShaderShell::findByName(shaders, pgmName);
    GLint uLocation = glGetUniformLocation(focusShader->ID,uName);
    if (uLocation < 0){
-      cerr << "ERROR: cannot retrieve uniform variable '" << uName << "' from program '" << pgmName << "' : loc=" << uLocation << endl;
+      cout << "WARNING: program '" << pgmName << "' cannot retrieve uniform '" << uName << "' : loc=" << uLocation << endl;
+      return;
    }
-   focusShader->uniforms.push_back({uName, uLocation, type, glLocation});
+   focusShader->uniforms.emplace_back(uName, uLocation, type, glLocation);
 }
 
 
@@ -113,10 +122,6 @@ void Glwindow::render(const string &shaderName) {
    focusShader = ShaderShell::findByName(shaders, shaderName);
    glUseProgram(focusShader->ID);
    glBindFramebuffer(GL_FRAMEBUFFER,focusShader->fboID);
-   // error checking for FBO binding
-   if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-      cerr << "Framebuffer error " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << endl;
-   }
 
    // activate input uniforms associated with this shader
    for (const UniformShell& focusU : focusShader->uniforms) {
@@ -138,6 +143,13 @@ void Glwindow::render(const string &shaderName) {
          cerr << "shader '" << shaderName << "' has no output textures bound!" << endl;
       }
       glDrawBuffers(texOutCount, Glwindow::colorAttachmentCodes);
+   }
+
+   // error checking for FBO binding
+   if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+      cerr << "render(): Framebuffer error setting up shader '" << focusShader->name << "':" << endl;
+      cerr << glCheckFramebufferStatus(GL_FRAMEBUFFER) << endl;
+      // error 36055 = GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
    }
 
    // we're only using two triangles so depth testing isn't necessary
@@ -179,7 +191,7 @@ int Glwindow::glfwStart() {
 // set up various circumstances related to OpenGL
 void Glwindow::setupGL(){
    glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
-   glClearColor(1.,0.,0.,1.);
+   glClearColor(0.,0.,0.,1.);
 
    // set up buffers to hold triangle vertices
    glGenVertexArrays(1,&vao);
@@ -198,16 +210,11 @@ void Glwindow::setupGL(){
          2*sizeof(float),
          (void*)0
    );
-
-   // TODO: bind texture uv's using vertex coordinates
-   // or not... since we can access textures from shaders using screen coordinates
-   //glEnableVertexAttribArray(1);
-   //glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0 );
 };
 
-// load shaders
-void Glwindow::loadShaderFiles(){
-   // Read the Vertex Shader code from the file- always the same default vertex shader
+// load vertex shader
+void Glwindow::loadVertShaderFile(){
+   // retrieval from file...
    string vertShaderName = "shaders/_vert.glsl";
    ifstream VertexShaderStream(vertShaderName);
    stringstream sstr;
@@ -217,14 +224,13 @@ void Glwindow::loadShaderFiles(){
       vertSrcString = sstr.str();
       VertexShaderStream.close();
    }else{
-      cout << "Impossible to open shaders/_vert.glsl" << endl;
+      cerr << "Impossible to open shaders/_vert.glsl" << endl;
       getchar();
       return;
    }
    const char* const vertShaderSrc = vertSrcString.c_str();
-
-   // collect & compile vertex shader
-   GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);
+   // ... and compilation into a shader program through OpenGL
+   vertShader = glCreateShader(GL_VERTEX_SHADER);
    glShaderSource(vertShader, 1, &vertShaderSrc, NULL);
    glCompileShader(vertShader);
    // detect compilation errors
@@ -235,11 +241,14 @@ void Glwindow::loadShaderFiles(){
       glGetShaderInfoLog(vertShader, 512, NULL, infoLog);
       cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << endl;
    }
+}
 
-
+// load fragment shader by name and compile it with the common vertex shader
+void Glwindow::loadFragShaderFile(){
    // Read the Fragment Shader code from the file
    string fragShaderName = "shaders/" + focusShader->name + "_frag.glsl";
    ifstream FragmentShaderStream(fragShaderName);
+   stringstream sstr;
    string fragSrcString;
    sstr.str(""); // clear vertex shader from string stream
    if(FragmentShaderStream.is_open()){
@@ -247,13 +256,13 @@ void Glwindow::loadShaderFiles(){
       fragSrcString = sstr.str();
       FragmentShaderStream.close();
    }
-
    const char* const fragShaderSrc = fragSrcString.c_str();
    // collect & compile fragment shader
    GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);
    glShaderSource(fragShader, 1, &fragShaderSrc, NULL);
    glCompileShader(fragShader);
    // detect compilation errors
+   int shaderCompileSuccess;
    glGetShaderiv(fragShader, GL_COMPILE_STATUS, &shaderCompileSuccess);
    if(!shaderCompileSuccess) {
       char infoLog[512];
@@ -275,7 +284,7 @@ void Glwindow::loadShaderFiles(){
    glDetachShader(focusShader->ID, vertShader);
    glDetachShader(focusShader->ID, fragShader);
 
-   glDeleteShader(vertShader);
+   // don't delete the vertex shader, we'll need that for other shader programs
    glDeleteShader(fragShader);
 }
 

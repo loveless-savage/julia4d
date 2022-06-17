@@ -1,5 +1,5 @@
 #version 460 core
-in vec4 pixelRayCoord;
+layout (location=0) in vec4 pixelRayCoord;
 
 //uniform vec2 z0;
 

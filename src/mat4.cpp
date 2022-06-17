@@ -1,19 +1,18 @@
 #include "mat4.h"
 
 // constructor
-mat4::mat4() {
+mat4::mat4(){
 	for (int i=0;i<16;i++) { // zero out the matrix
       data[i] = 0;
       if (i % 5 == 0) data[i] = 1; // add a strip of ones down the diagonal for the identity matrix
    }
+   updateVectorAxes();
 };
 // destructor
-mat4::~mat4(){
-   cout << "m";
-}
+mat4::~mat4(){ }
 
 // easy access to members of private data
-float &mat4::operator [](int idx){
+float& mat4::operator [](int idx){
 	return *(data+idx);
 }
 
@@ -50,7 +49,7 @@ void mat4::buildRotor (int axisA, int axisB, float ang){
 };
 
 // multiply by another matrix
-void mat4::mult(mat4 rotor){
+void mat4::mult(mat4& rotor){
 	int i,j; // define our counter variables here for reuse
 	// copy current matrix so we don't lose it
 	float temp[16];
@@ -68,13 +67,16 @@ void mat4::mult(mat4 rotor){
 	}
 };
 
-// get one axis of the mat4, formatted as a vec4
-vec4 mat4::axis(int axisNum) const {
-   if (axisNum < 0 || axisNum >= 4) {
-      cout << "mat4 error: attempted to access row " << axisNum << endl;
-      throw exception();
-   }
-   return vec4(&data[axisNum*4]);
+// get the location of one of the axes of the position matrix
+float* mat4::axis(int axisNum) const {
+   return const_cast<float*>(data + axisNum*4);
+};
+
+void mat4::updateVectorAxes(float c_x, float c_y, float c_z, float c_w) {
+   x = data+0;    x *= c_x;
+   y = data+4;    y *= c_y;
+   z = data+8;    z *= c_z;
+   w = data+12;    w *= c_w;
 }
 
 // print data values for debugging
@@ -84,4 +86,4 @@ void mat4::dump() const {
 		cout << data[i];
 	}
 	cout << "\n\n";
-};
+}

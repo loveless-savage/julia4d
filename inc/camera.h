@@ -2,6 +2,7 @@
 #include <string>
 #include <ctime>
 #include "mat4.h"
+#include "glwindow.h"
 #include "rayMarcher.h"
 
 
@@ -40,10 +41,16 @@ public:
 
 	// rotate associated gimbal
 	void rotate(int axisA, int axisB, float ang);
+   // approach & retreat the camera from the origin
+   void adjustDistFromOrigin(float dr);
+   // change the radius of the FOV sphere centered at the origin
+   void adjustFovSphereRadius(float dr);
+
+   // associate camera with an OpenGL rendering window
+   void GLWindowTarget(Glwindow *target, const char* shaderName = "main");
 
 	// resize future photos
 	void renderOptions(int w, int h, int iterMax, RayMarcher::renderType rtype);
-
 	// render a photo at the current position
 	void takePhoto(const string& filename);
 
@@ -54,7 +61,7 @@ private:
 	// rotation coordinates
 	mat4 *pos, *rtemp;
    // additional camera positioning values
-   float distFromOrigin, fovSphereRadius;
+   float distFromOrigin, fovStepLength, fovSphereRadius;
 
 	// rayMarcher handles all the math behind ray marching & julia set iteration
 	RayMarcher *marcher;

@@ -20,13 +20,15 @@ public:
 	void buildRotor (int axisA, int axisB, float ang);
 
 	// multiply by another matrix
-	void mult(mat4 rotor);
+	void mult(mat4 &rotor);
 
-	// print data values for debugging
-	void dump() const;
+   // access columns of the matrix
+   float* axis(int axisNum) const;
+   void updateVectorAxes(float c_x = 1.0,float c_y = 1.0,float c_z = 1.0,float c_w = 1.0);
+   vec4 x,y,z,w;
 
-   // access columns of the matrix with vecShell handles
-   vec4 axis(int axisNum) const;
+   // print data values for debugging
+   void dump() const;
 private:
 	// data storage variable
 	float data[16];

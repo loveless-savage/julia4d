@@ -1,36 +1,37 @@
 #version 460 core
 
-in vec4 pixelRayCoord;
 in vec2 texCoord;
+//in vec4 stepX, stepY;
 
 out vec4 fragColor;
 
 uniform int mode;
+//uniform vec4 cameraDir;
 uniform sampler2D juliaTex;
 uniform sampler2D dJuliaTex;
-//uniform sampler2D mandelbrotTex;
+uniform sampler2D pos;
 
 void main() {
-    vec4 dz = texture(dJuliaTex,texCoord).rgba;
+    vec4 dzIn = texture(dJuliaTex,texCoord).rgba;
 
     float focusVal;
     switch (mode) {
         case 4:
-        focusVal = dz.w;
+        focusVal = dzIn.w;
         break;
         case 3:
-        focusVal = dz.z;
+        focusVal = dzIn.z;
         break;
         case 2:
-        focusVal = dz.y;
+        focusVal = dzIn.y;
         break;
         case 1:
-        focusVal = dz.x;
+        focusVal = dzIn.x;
         break;
         default:
-        focusVal = texture(juliaTex,texCoord).r;
+        focusVal = texture(pos,texCoord).x / 2.f; // only the x component was written to
     }
-    focusVal *= 4.f;
+    //focusVal *= 32.f;
     vec3 v = vec3(1.f,0.f,0.f);
     vec3 q = vec3(sin(focusVal));
     vec3 temp = cross(q.xyz, v) + v * cos(focusVal);
@@ -40,4 +41,6 @@ void main() {
     fragColor = vec4(rotated,1.f);
     //fragColor = texture(juliaTex,texCoord).rgba;
     //fragColor /= 2.f;
+    //fragColor += cameraDir/0.5f;
+    //fragColor += stepX + stepY;
 }

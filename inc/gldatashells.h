@@ -18,7 +18,7 @@ struct GlobShell {
    GlobShell();
    GlobShell(const string& name, GLuint ID);
    template <class T>
-         static T* findByName(vector<T>& globs, const string& searchName);
+         static T* findByName(vector<T>& globs, const string& searchName, bool allowSearchFail = false);
 };
 
 struct UniformShell : GlobShell {
@@ -28,22 +28,15 @@ struct UniformShell : GlobShell {
    //int size = 0;
    UniformShell();
    UniformShell(const string& name, GLint ID, GLenum type, void* location);
-   static UniformShell* findByName(vector<UniformShell>& globs, const string& searchName);
+   static UniformShell* findByName(vector<UniformShell>& globs, const string& searchName, bool allowSearchFail = false);
 };
 
 struct TexShell : GlobShell {
  public:
+   GLint type;
    TexShell();
    TexShell(const string& name, GLuint ID);
-   static TexShell* findByName(vector<TexShell>& globs, const string& searchName);
-};
-
-struct FBOShell : GlobShell {
- public:
-   vector<TexShell*> texturesOut;
-   FBOShell();
-   FBOShell(const string& name, GLuint ID);
-   static FBOShell* findByName(vector<FBOShell>& globs, const string& searchName);
+   static TexShell* findByName(vector<TexShell>& globs, const string& searchName, bool allowSearchFail = false);
 };
 
 struct ShaderShell : GlobShell {
@@ -52,8 +45,17 @@ struct ShaderShell : GlobShell {
    vector<TexShell*> texturesIn;
    vector<TexShell*> texturesOut;
    GLuint fboID;
-   FBOShell* fbo;
+   bool isMultipass = false;
    ShaderShell();
    ShaderShell(const string& name, GLuint ID);
-   static ShaderShell* findByName(vector<ShaderShell>& globs, const string& searchName);
+   static ShaderShell* findByName(vector<ShaderShell>& globs, const string& searchName, bool allowSearchFail = false);
+};
+
+struct MPTexShell : TexShell {
+ public:
+   TexShell* swapTex;
+   vector<ShaderShell*> shaders;
+   MPTexShell();
+   MPTexShell(const string& name, GLuint ID);
+   static MPTexShell* findByName(vector<MPTexShell>& globs, const string& searchName, bool allowSearchFail = false);
 };
