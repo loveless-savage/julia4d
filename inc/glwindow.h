@@ -51,8 +51,8 @@ class Glwindow {
    bool shouldStayOpen;
 
    // handle several buffers at once
-   vector<ShaderShell> shaders;
-   vector<TexShell> textures;
+   vector<ShaderShell*> shaders;
+   vector<TexShell*> textures;
    // use these pointers to do several operations at once on a specific object
    ShaderShell* focusShader;
    TexShell *focusTex;

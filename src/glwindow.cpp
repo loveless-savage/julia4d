@@ -1,7 +1,6 @@
 #include "glwindow.h"
 
 
-
 // constructor
 Glwindow::Glwindow(int width, int height)
       : W(width), H(height), shouldStayOpen(true)
@@ -24,14 +23,16 @@ Glwindow::Glwindow(int width, int height)
    loadVertShaderFile();
 
    // the shader main_frag.glsl always renders to the screen, so set it up w/out an attached FBO
-   shaders.emplace_back();
-   focusShader = &(shaders.at(0));
+   shaders.push_back(new ShaderShell);
+   focusShader = shaders.at(0);
    focusShader->name = "main";
    focusShader->fboID = 0;
    loadFragShaderFile();
 };
 // destructor
 Glwindow::~Glwindow(){
+   for (auto& s : shaders) delete s;
+   for (auto& t : textures) delete t;
    glDeleteShader(vertShader);
    glfwDestroyWindow(window); // TODO: what's wrong with this boi?
    glfwTerminate();
@@ -41,8 +42,8 @@ Glwindow::~Glwindow(){
 
 // set up a new buffer with a shader of its own
 void Glwindow::addShader(const string& shaderName){
-   shaders.emplace_back();
-   focusShader = &(shaders.back());
+   shaders.push_back(new ShaderShell);
+   focusShader = shaders.back();
    focusShader->name = shaderName;
    loadFragShaderFile();
    // every shader has an associated FrameBuffer Object (FBO)
@@ -51,8 +52,8 @@ void Glwindow::addShader(const string& shaderName){
 
 // set up a new texture to be used by whichever shader likes
 void Glwindow::addIOTexture(const string &texName, const GLint internalFormat) {
-   textures.emplace_back();
-   focusTex = &(textures.back());
+   textures.push_back(new TexShell());
+   focusTex = textures.back();
    focusTex->name = texName;
 
    glGenTextures(1,&(focusTex->ID));
@@ -69,6 +70,7 @@ void Glwindow::addIOTexture(const string &texName, const GLint internalFormat) {
                 nullptr);
    // other general texture settings
    texConfig();
+   cout << texName << " = " << focusTex << endl;
 }
 
 // let the Glwindow object know to assign a texture as input to a shader

@@ -58,7 +58,7 @@ void Imager::print(){
 Camera::Camera() :
 // these are some pretty good default values for camera positioning
          // when the camera is twice the distance from the origin as the object's size,
-         distFromOrigin(3.0),
+         distFromOrigin(5.0),
          // it leads to a comfortable 30degree viewing angle
          fovSphereRadius(2.5),
          // we will adjust this in a moment
@@ -91,6 +91,7 @@ void Camera::rotate(int axisA, int axisB, float ang){
 	rtemp->buildRotor(axisA,axisB,ang);
 	pos->mult(*rtemp);
    pos->updateVectorAxes(fovStepLength,fovStepLength);
+   destabilize();
 	//pos->dump();
 };
 // approach & retreat the camera from the origin
@@ -98,6 +99,7 @@ void Camera::adjustDistFromOrigin(float dr){
    distFromOrigin += dr;
    fovSphereRadius = distFromOrigin // scale from projected length to world length
                      * fovStepLength / sqrt(1+fovStepLength*fovStepLength); // triangle ratio
+   destabilize();
 }
 // change the viewing radius, via the radius of the FOV sphere centered at the origin
 void Camera::adjustFovSphereRadius(float dr){
@@ -106,6 +108,7 @@ void Camera::adjustFovSphereRadius(float dr){
                    / sqrt(distFromOrigin*distFromOrigin - fovSphereRadius * fovSphereRadius); // triangle ratio
 
    pos->updateVectorAxes(fovStepLength,fovStepLength);
+   destabilize();
 }
 
 
@@ -219,3 +222,8 @@ void Camera::takePhoto(const string& filename){
 
 // print data values for debugging
 void Camera::dumpPos(){ pos->dump(); }
+
+// this tells the render pipeline whether to reprocess the same render again, or to render at a new angle
+bool Camera::isStationary() const { return stationary; }
+void Camera::destabilize() { stationary = false; }
+void Camera::stabilize() { stationary = true; }

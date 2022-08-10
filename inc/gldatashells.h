@@ -18,7 +18,7 @@ struct GlobShell {
    GlobShell();
    GlobShell(const string& name, GLuint ID);
    template <class T>
-         static T* findByName(vector<T>& globs, const string& searchName, bool allowSearchFail = false);
+         static T* findByName(vector<T*>& globs, const string& searchName, bool allowSearchFail = false);
 };
 
 struct UniformShell : GlobShell {
@@ -28,7 +28,7 @@ struct UniformShell : GlobShell {
    //int size = 0;
    UniformShell();
    UniformShell(const string& name, GLint ID, GLenum type, void* location);
-   static UniformShell* findByName(vector<UniformShell>& globs, const string& searchName, bool allowSearchFail = false);
+   static UniformShell* findByName(vector<UniformShell*>& globs, const string& searchName, bool allowSearchFail = false);
 };
 
 struct TexShell : GlobShell {
@@ -36,26 +36,26 @@ struct TexShell : GlobShell {
    GLint type;
    TexShell();
    TexShell(const string& name, GLuint ID);
-   static TexShell* findByName(vector<TexShell>& globs, const string& searchName, bool allowSearchFail = false);
+   static TexShell* findByName(vector<TexShell*>& globs, const string& searchName, bool allowSearchFail = false);
 };
 
 struct ShaderShell : GlobShell {
  public:
-   vector<UniformShell> uniforms;
    vector<TexShell*> texturesIn;
    vector<TexShell*> texturesOut;
+   vector<UniformShell> uniforms;
    GLuint fboID;
    bool isMultipass = false;
    ShaderShell();
    ShaderShell(const string& name, GLuint ID);
-   static ShaderShell* findByName(vector<ShaderShell>& globs, const string& searchName, bool allowSearchFail = false);
+   static ShaderShell* findByName(vector<ShaderShell*>& globs, const string& searchName, bool allowSearchFail = false);
 };
 
 struct MPTexShell : TexShell {
  public:
    TexShell* swapTex;
-   vector<ShaderShell*> shaders;
+   vector<ShaderShell*> writingShaders;
    MPTexShell();
    MPTexShell(const string& name, GLuint ID);
-   static MPTexShell* findByName(vector<MPTexShell>& globs, const string& searchName, bool allowSearchFail = false);
+   static MPTexShell* findByName(vector<MPTexShell*>& globs, const string& searchName, bool allowSearchFail = false);
 };

@@ -54,6 +54,11 @@ public:
 	// render a photo at the current position
 	void takePhoto(const string& filename);
 
+   // has the camera been jostled? (see bool stationary)
+   bool isStationary() const;
+   void destabilize();
+   void stabilize();
+
 	// print data values for debugging
 	void dumpPos();
 	
@@ -68,6 +73,9 @@ private:
 
 	// image size in pixels
 	int pxW, pxH;
+
+   // this tells the render pipeline whether to reprocess the same render again, or to render at a new angle
+   bool stationary = true;
 
 	// pointers for beginning & write locations of the photo
 	unsigned char *photo, *head;
