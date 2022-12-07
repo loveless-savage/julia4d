@@ -1,5 +1,6 @@
 #pragma once
 #include "gldatashells.h"
+#include <map>
 #include <fstream>
 #include <sstream>
 #ifndef GLEW_STATIC
@@ -9,11 +10,12 @@
 #endif // GLEW_STATIC
 using namespace std;
 
+#define VECTOR true
 
 class Glwindow {
  public:
    // constructor
-   Glwindow(int width, int height);
+   Glwindow(int width, int height, const string& mainShaderName = "main");
    // destructor
    ~Glwindow();
 
@@ -51,11 +53,19 @@ class Glwindow {
    bool shouldStayOpen;
 
    // handle several buffers at once
+#if VECTOR
    vector<ShaderShell*> shaders;
    vector<TexShell*> textures;
    // use these pointers to do several operations at once on a specific object
    ShaderShell* focusShader;
    TexShell *focusTex;
+#else
+   map<string, ShaderShell*> shaders;
+   map<string, TexShell*> textures;
+   // use these pointers to do several operations at once on a specific object
+   map<string,ShaderShell*>::iterator focusShader;
+   map<string,TexShell*>::iterator focusTex;
+#endif
 
    // set up GLFW in general; call this before initializing any instance
    static int glfwStart();

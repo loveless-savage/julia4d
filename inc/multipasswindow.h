@@ -5,7 +5,7 @@
 class MultipassWindow : public Glwindow {
  public:
    // constructor is inherited from Glwindow
-   MultipassWindow(int width, int height);
+   MultipassWindow(int width, int height, const string& mainShaderName = "main");
    // do all the Glwindow destructor things, as well as de-allocating mpTextures
    ~MultipassWindow();
 
