@@ -48,7 +48,7 @@ void MultipassWindow::attachMPTexIO(const string& shaderName, const string& mpNa
    focusShader->texturesIn.push_back(focusMPTex);
 
    // use overloaded function from class MultipassWindow
-   MultipassWindow::attachTexOut(shaderName, mpName);
+   Glwindow::attachTexOut(shaderName, mpName);
 
    focusShader->isMultipass = true;
 }
@@ -81,6 +81,7 @@ void MultipassWindow::render(const string &shaderName) {
 }
 
 // swap textures: we use this helper function for our multipass iterator
+// TODO: buffers get swapped multiple times when there are multiple textures
 void MultipassWindow::swapMPTex(const string& mpName) {
    focusMPTex = MPTexShell::findByName(mpTextures,mpName, true);
    // this entire function does nothing if we tried to access a non-multipass texture
