@@ -2,7 +2,7 @@
 
 
 // use constructor defined by Glwindow
-MultipassWindow::MultipassWindow(int width, int height) : Glwindow(width,height) {}
+MultipassWindow::MultipassWindow(int width, int height, const string& mainShaderName) : Glwindow(width, height, mainShaderName) {}
 
 MultipassWindow::~MultipassWindow() {
    for (auto& m : mpTextures) delete m;
@@ -48,7 +48,7 @@ void MultipassWindow::attachMPTexIO(const string& shaderName, const string& mpNa
    focusShader->texturesIn.push_back(focusMPTex);
 
    // use overloaded function from class MultipassWindow
-   attachTexOut(shaderName, mpName);
+   MultipassWindow::attachTexOut(shaderName, mpName);
 
    focusShader->isMultipass = true;
 }
@@ -83,11 +83,11 @@ void MultipassWindow::render(const string &shaderName) {
 // swap textures: we use this helper function for our multipass iterator
 void MultipassWindow::swapMPTex(const string& mpName) {
    focusMPTex = MPTexShell::findByName(mpTextures,mpName, true);
-   // this function does nothing if the texture isn't set up as a swap texture
+   // this entire function does nothing if we tried to access a non-multipass texture
    if (focusMPTex == nullptr) return;
 
-   cout << "***SWAP*** mpID(texID): ";
-   cout << focusMPTex->ID << "(" << focusMPTex->swapTex->ID << ") => ";
+   //cout << "***SWAP*** mpID(texID): ";
+   //cout << focusMPTex->ID << "(" << focusMPTex->swapTex->ID << ") => ";
 
    // first of all, swap ID's so we can access them swapped
    GLuint swap_ID = focusMPTex->ID;
@@ -95,7 +95,7 @@ void MultipassWindow::swapMPTex(const string& mpName) {
    focusMPTex->swapTex->ID = swap_ID;
 
    focusTex = TexShell::findByName(textures, mpName);
-   cout << focusMPTex->ID << "(" << focusMPTex->swapTex->ID << ")" << endl;
+   //cout << focusMPTex->ID << "(" << focusMPTex->swapTex->ID << ")" << endl;
    //cout << "swapAddr direct = " << focusTex << ", chained = " << focusMPTex->swapTex << endl;
    // now rebind the swapped texture to all associated shaders
    for (auto& writingShader : focusMPTex->writingShaders) {
@@ -109,8 +109,8 @@ void MultipassWindow::swapMPTex(const string& mpName) {
             break;
          }
       }
-      cout << "Rebinding texture " << focusShader->texturesOut.at(texOutIdx)->name;
-      cout << " to shader " << focusShader->name << endl;
+      //cout << "Rebinding texture " << focusShader->texturesOut.at(texOutIdx)->name;
+      //cout << " to shader " << focusShader->name << endl;
       // connect opposite texture ID to fbo in the OpenGL context
       glBindFramebuffer(GL_FRAMEBUFFER,focusShader->fboID);
       glFramebufferTexture2D(

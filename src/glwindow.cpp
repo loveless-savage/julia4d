@@ -2,7 +2,7 @@
 
 
 // constructor
-Glwindow::Glwindow(int width, int height)
+Glwindow::Glwindow(int width, int height, const string& mainShaderName)
       : W(width), H(height), shouldStayOpen(true)
 {
    glfwStart();
@@ -22,19 +22,27 @@ Glwindow::Glwindow(int width, int height)
    // compile the commonly shared vertex shader:
    loadVertShaderFile();
 
-   // the shader main_frag.glsl always renders to the screen, so set it up w/out an attached FBO
+   // one specific shader (main_frag.glsl by defualt) always renders to the screen,
+   // so set it up w/out an attached FBO
+#if VECTOR
    shaders.push_back(new ShaderShell);
    focusShader = shaders.at(0);
-   focusShader->name = "main";
+   focusShader->name = mainShaderName;
    focusShader->fboID = 0;
+#else
+   shaders["main"] = new ShaderShell(mainShaderName, 0);
+   focusShader = shaders.find("main");
+#endif
    loadFragShaderFile();
+   // still access rendering file as "main" if not main_frag.glsl
+   focusShader->name = "main";
 };
 // destructor
 Glwindow::~Glwindow(){
    for (auto& s : shaders) delete s;
    for (auto& t : textures) delete t;
    glDeleteShader(vertShader);
-   glfwDestroyWindow(window); // TODO: what's wrong with this boi?
+   glfwDestroyWindow(window); // TODO: why does this boi throw an error code?
    glfwTerminate();
    cout << endl << "glfwGetError() = " << glfwGetError(NULL);
    cout << endl << "glGetError() = " << glGetError();

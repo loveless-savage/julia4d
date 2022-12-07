@@ -3,9 +3,11 @@
 in vec2 texCoord;
 
 uniform int frame;
-uniform sampler2D juliaTex;
+uniform sampler2D pos;
+uniform sampler2D dzTex;
 
-out float fragColor;
+out float posOut;
+out vec4 dzOut;
 
 void main() {
     // circular viewport
@@ -21,8 +23,10 @@ void main() {
     // avoid error pixels
     if( z.x >= 1.f || z.x <= 0.f
      || z.y >= 1.f || z.y <= 0.f){
-        fragColor = 0.f;
+        posOut = -1.f;
+        dzOut = vec4(-1.f);
         return;
     }
-    fragColor = texture(juliaTex, z).x;
+    posOut = texture(pos, z).x;
+    dzOut = texture(dzTex, z);
 }
