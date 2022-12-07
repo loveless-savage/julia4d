@@ -4,7 +4,7 @@ echo compiling julia4d
 echo
 
 # compile
-g++ src/* -I inc/ -o julia4d
+g++.exe src/* -I inc/ -I libs/ -L libs/ -o julia4d
 
 # check for success or failure of compilation
 if [ $? -eq 0 ]; then
