@@ -21,5 +21,5 @@ add_executable(julia4d
         src/gldatashells.cpp
     )
 
-target_link_libraries(julia4d glfw3 glew32 ${OPENGL_LIBRARIES})
+target_link_libraries(julia4d glfw GLEW ${OPENGL_LIBRARIES})
 
