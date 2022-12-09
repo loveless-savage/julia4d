@@ -30,7 +30,11 @@ void main() {
         default:
         focusVal = texture(juliaTex,texCoord).r;
     }
-    focusVal *= 4.f;
+    if(focusVal == 1.f){
+        fragColor = vec4(0.f);
+        return;
+    }
+    //focusVal *= 4.f;
     vec3 v = vec3(1.f,0.f,0.f);
     vec3 q = vec3(sin(focusVal));
     vec3 temp = cross(q.xyz, v) + v * cos(focusVal);

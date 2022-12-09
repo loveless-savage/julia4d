@@ -38,7 +38,7 @@ int main(int argc, char** argv){
    //w->render("julia","juliaTex");
    //w->renderToMPTex("mpTest", "juliaTex");
    //w->renderMain("main",stayOpen);
-   const float MOVEAMT = 0.001;
+   const float MOVEAMT = 0.0004;
    do{
       // adjust z_0 with arrow keys
       if (w->isPressed(GLFW_KEY_UP)) {

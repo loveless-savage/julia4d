@@ -33,8 +33,8 @@ void main(){
     }
 
     if (i == 24){
-        fragColor = vec4(0.f);
-        dFragColor = vec4(0.f);
+        fragColor = vec4(1.f);
+        dFragColor = vec4(1.f);
         return;
     }
 
